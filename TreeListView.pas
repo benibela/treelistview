@@ -96,10 +96,10 @@ type
     function Get(Index: Integer): TTreeListItem; inline;
   public
     procedure Sort(CompareFunc: TTreeListItemCompare);
-    function AddItem:TTreelistItem;
-    function AddItemWithCaption(caption:string):TTreelistItem;
-    function AddChildItem(Parent:TTreeListItem):TTreelistItem;
-    function AddChildItemWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
+    function Add:TTreelistItem;
+    function AddWithCaption(caption:string):TTreelistItem;
+    function AddChild(Parent:TTreeListItem):TTreelistItem;
+    function AddChildWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
     function GetRealItemCount(const countTyp:TRealItemCounting ) :integer;
     function GetItemWithRealIndex(index:integer):TTreeListItem;
     function RealIndexOf(const item:ttreeListItem;const countTyp:TRealItemCounting):integer;
@@ -190,7 +190,7 @@ type
       F_SubItems:TTreeListItems;
       F_RecordItems:TRecordItemList;
       F_caption:string;
-      F_Expanded:boolean;
+      F_Expanded,F_Selected:boolean;
 
       F_Indent:integer; //Gibt an, wieoft, das Item eingerückt wurde, diese Eigenschaft wird von PaintTo und GetItemAtPosWithIndentSet gesetzt, und muss *nicht* stimmmen
 
@@ -203,6 +203,8 @@ type
       procedure DoChange;
       procedure DoChanging;
 
+      procedure SetSelected(newSelected: boolean);
+
       procedure SetSubItems(const value:TtreeListItems);
       procedure SetRecordItems(const value:TRecordItemList);
       procedure SetExpand(const expanded:boolean);
@@ -210,7 +212,7 @@ type
       function GetRecordItemsText(i: Integer): string;
       procedure SetRecordItemsText(i: Integer; const AValue: string);
     public
-      Tag:integer;
+      Tag:longint;
 
       //Create
       constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview);
@@ -229,9 +231,13 @@ type
       function GetNextItemIgnoringChildren:TTreeListItem;
       //function GetNextItem:TTreeListItem; deprecated use nextvisibleitem
       //function GetPrevItem:TTreeListItem;
+      function GetLastVisibleSubSubItem:TTreeListItem; //Gibt das sichtbare unterster Item, des untersten Items, des untersten Items, des untersten Items..., des untersten SubItems zuück.
       function GetLastSubSubItem:TTreeListItem; //Gibt das unterster Item, des untersten Items, des untersten Items, des untersten Items, des untersten Items, des untersten Items..., des untersten SubItems zuück.
+      //if the item doesn't exists the current item is returned!
       function GetNextVisibleItem(Delta:longint=1):TTreeListItem;
       function GetPrevVisibleItem(Delta:longint=1):TTreeListItem;
+      function GetNextItem():TTreeListItem;
+      function GetPrevItem():TTreeListItem;
 
 
       property Parent:TTreeListItem read F_parent;
@@ -251,6 +257,7 @@ type
       property IndexOrBitmap:cardinal read F_indexOrBitmap write F_indexOrBitmap;
       property Caption:string read F_Caption write F_Caption;
       property ImageTyp:TImageTyp read F_ImageTyp write F_ImageTyp;
+      property Selected: boolean read F_Selected write SetSelected;
 //      property Font:TFont read F_Font write SetFont
   end;
 
@@ -286,7 +293,8 @@ type
     F_HotTrackFont:TFont;
     F_HotTrackSubTextItems:boolean;
     F_Items:TTreeListItems;
-    F_Selected: TTreeListItem;
+    F_Focused: TTreeListItem;
+    F_BaseSelect: TTreeListItem; //last item selected without shift
     F_Header:THeaderControl;
     F_VScroll:TScrollBar;
     F_HScroll:TScrollBar;
@@ -296,7 +304,9 @@ type
     F_SelectedFont:TFont;
     F_SelectHotTrackFont:TFont;
     F_SelectBackColor:TColor;
-
+    F_MultiSelect:boolean;
+    F_SelCount: longint;
+    
     F_ButtonColor:TColor;
     F_BgColor:TColor;
 
@@ -350,10 +360,13 @@ type
     function DoCustomItemDrawEvent(eventTyp_cdet:TCustomDrawEventTyp;item:TTreeListItem;xpos,ypos,xColumn:integer;lastItem:boolean):boolean;
     function DoCustomRecordItemDrawEvent(eventTyp_cdet:TCustomDrawEventTyp;parentItem:TTreeListItem;RecordItem:TTreeListRecordItem;xpos,ypos,xColumn:integer):boolean;
 
+    procedure removeSelection(list: TTreeListItems);
+    procedure SetMultiSelect(value: boolean);
     procedure DoSelect;virtual;
 
     //Kommunikationsroutinen (Set- und Getfunktionen)
     procedure SetItems(const value:TTreeListItems);
+    procedure SetFocused(const AValue: TTreeListItem);
     procedure SetSelected(const AValue: TTreeListItem);
 
     procedure SetTopPos(const i:integer);
@@ -388,8 +401,14 @@ type
     procedure UpdateScrollBarPos;
   public
     { Public-Deklarationen}
-    property selected:TTreeListItem read F_Selected write SetSelected;
     hotTrackedTextItem:TTreeListRecordItemText;
+
+    procedure selectRange(a,b: TTreeListItem);
+
+    property selCount: longint read F_SelCount;
+    property multiSelect: boolean read F_MultiSelect write SetMultiSelect;
+    property focused:TTreeListItem read F_Focused write SetFocused;
+    property Selected:TTreeListItem read F_Focused write SetSelected;
 
     procedure UpdateScrollSize;
 
@@ -784,35 +803,35 @@ begin
 end;
 
 
-function TTreeListItems.AddItem:TTreelistItem;
+function TTreeListItems.Add:TTreelistItem;
 begin
   Result:=TTreeListItem.Create(F_Parent,F_TreeListView);
   Result.RecordItems.OnChanging:=OnChanging;
   Result.RecordItems.OnChange:=OnChange;
   Result.SubItems.OnChanging:=OnChanging;
   Result.SubItems.OnChange:=OnChange;
-  add(result);
+  inherited add(result);
 end;
 
-function TTreeListItems.AddItemWithCaption(caption:string):TTreelistItem;
+function TTreeListItems.AddWithCaption(caption:string):TTreelistItem;
 begin
   Result:=TTreeListItem.CreateWithCaption(F_Parent,F_TreeListView, caption);
   Result.RecordItems.OnChanging:=OnChanging;
   Result.RecordItems.OnChange:=OnChange;
   Result.SubItems.OnChanging:=OnChanging;
   Result.SubItems.OnChange:=OnChange;
-  add(result);
+  inherited add(result);
 end;
 
-function TTreeListItems.AddChildItem(Parent:TTreeListItem):TTreelistItem;
+function TTreeListItems.AddChild(Parent:TTreeListItem):TTreelistItem;
 begin
-  if Parent=nil then exit(AddItem)
-  else exit(Parent.SubItems.AddItem);
+  if Parent=nil then exit(Add)
+  else exit(Parent.SubItems.Add);
 end;
 
-function TTreeListItems.AddChildItemWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
+function TTreeListItems.AddChildWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
 begin
-  result:=AddChildItem(Parent);
+  result:=AddChild(Parent);
   result.Caption:=caption;
 end;
 
@@ -1075,7 +1094,7 @@ begin
   for i:=0 to TextItems.Count-1 do begin
     if listView.hotTrackedTextItem=(TObject(TextItems[i]) as TTreeListRecordItemText) then begin
       if TTreeListRecordItemText(TextItems[i]).ParentHotTrackFont then begin
-        if listView.selected=parentItem then
+        if parentItem.Selected then
           listView.Canvas.Font.Assign(listView.SelectHotTrackFont)
          else
           listView.Canvas.Font.Assign(listView.HotTrackFont);
@@ -1084,7 +1103,7 @@ begin
 
 //      listView.Canvas.Font.Assign(TTreeListRecordItemText(TextItems[i]).F_HotTrackFont)
     end else {if listView.Canvas.Font.Handle<>listView.Font.Handle then}
-      if listView.selected=parentItem  then
+      if parentItem.Selected  then
         listView.Canvas.Font.Assign(listView.SelectedFont)
        else
         listView.Canvas.Font.Assign(listView.Font);
@@ -1185,6 +1204,15 @@ end;
 procedure TTreeListItem.DoChanging;
 begin
   RecordItems.DoChanging;
+end;
+
+procedure TTreeListItem.SetSelected(newSelected: boolean);
+begin
+  if Selected = newSelected then exit;
+  F_Selected:=newSelected;
+  if F_Selected and not TreeListView.multiSelect then
+    TreeListView.focused:=self;
+  DoChange;
 end;
 
 //Set-Funktion
@@ -1331,10 +1359,17 @@ begin
   end;
 end;}
 
-function TTreeListItem.GetLastSubSubItem:TTreeListItem;
+function TTreeListItem.GetLastVisibleSubSubItem:TTreeListItem;
 begin
   result:=self;
   while (result.SubItems.Count<>0)and(result.Expanded) do
+    Result:=Result.SubItems[Result.SubItems.count-1];
+end;
+
+function TTreeListItem.GetLastSubSubItem: TTreeListItem;
+begin
+  result:=self;
+  while (result.SubItems.Count<>0) do
     Result:=Result.SubItems[Result.SubItems.count-1];
 end;
 
@@ -1364,14 +1399,36 @@ begin
   while delta>0 do begin
     if result.Parent=nil then begin
       temp:=result.TreeListView.Items.IndexOf(result);
-      if temp>0 then Result:=result.TreeListView.Items[temp-1].GetLastSubSubItem;
+      if temp>0 then Result:=result.TreeListView.Items[temp-1].GetLastVisibleSubSubItem;
     end else begin
       temp:=Result.Parent.SubItems.IndexOf(Result);
       if temp=0 then result:=result.parent
-      else result:=result.parent.SubItems[temp-1].GetLastSubSubItem;
+      else result:=result.parent.SubItems[temp-1].GetLastVisibleSubSubItem;
     end;
     Delta-=1;
   end
+end;
+
+function TTreeListItem.GetNextItem(): TTreeListItem;
+begin
+  if SubItems.Count>0 then result:=SubItems[0]
+  else result:=GetNextItemIgnoringChildren;
+  if result=nil then result:=self;
+end;
+
+function TTreeListItem.GetPrevItem(): TTreeListItem;
+var temp:longint;
+begin
+  result:=self;
+  if result.Parent=nil then begin
+    temp:=result.TreeListView.Items.IndexOf(result);
+    if temp>0 then Result:=result.TreeListView.Items[temp-1].GetLastSubSubItem;
+  end else begin
+    temp:=Result.Parent.SubItems.IndexOf(Result);
+    if temp=0 then result:=result.parent
+    else result:=result.parent.SubItems[temp-1].GetLastSubSubItem;
+  end;
+  if result=nil then result:=self;
 end;
 
 procedure TTreeListItem.PaintTo(const listView:TW32TreeListView;const x:integer;var y:integer;const xColumn:integer;const last:boolean);
@@ -1386,17 +1443,19 @@ begin
   if listView.StripInvisibleItems and not Expanded then
     if (SubItems.GetRealItemCount([ricCountCollapsedSubItems]) and $1=0) then
       listView.PaintEvenItem:=not listView.PaintEvenItem;
+  //item bg color
+  if listView.Striped then begin
+    listView.canvas.Brush.Style:=bsSolid;
+    if listView.PaintEvenItem then listView.canvas.Brush.Color:=listView.StripedEvenColor
+    else listView.canvas.Brush.Color:=listView.StripedOddColor;
+  end;
+  //event handling
   defaultDraw:=listView.DoCustomItemDrawEvent(cdevtPrePaint,self,x,y,xColumn,last);
   F_Indent:=xColumn;
   yold:=y;
   if defaultDraw then begin
     if y>listView.F_Header.Height then begin
-      if listView.Striped then begin
-        listView.canvas.Brush.Style:=bsSolid;
-        if listView.PaintEvenItem then listView.canvas.Brush.Color:=listView.StripedEvenColor
-        else listView.canvas.Brush.Color:=listView.StripedOddColor;
-        listView.Canvas.FillRect(rect(0,y,listView.ClientWidth-listview.f_vscroll.width,y+listView.rowHeight));
-      end;
+      listView.Canvas.FillRect(rect(0,y,listView.ClientWidth-listview.f_vscroll.width,y+listView.rowHeight));
       rec.Left:=x;
       rec.top:=y;
       rec.right:=listView.F_Header.Sections[0].Width-14+listView.StartX;
@@ -1410,18 +1469,21 @@ begin
                    LineTo(min(x,rec.right),y + listView.RowHeight div 2);
                  end;
       end;
-      if listView.selected=self then begin
+      if self.Selected then begin
         listView.Canvas.pen.Style:=psClear;
         listView.Canvas.Brush.color:=listView.SelectBackColor;
         listView.Canvas.Brush.style:=bsSolid;
         listView.Canvas.font.Assign(listView.selectedfont);
        // listView.Canvas.font.Color:=clHighlightText;
-        listView.Canvas.Rectangle(0,y,listView.ClientWidth-listView.F_VScroll.Width,y+listView.RowHeight);
+        listView.Canvas.Rectangle(0,y,listView.ClientWidth-listView.F_VScroll.Width,y+listView.RowHeight+1);
        end else begin
         listView.Canvas.pen.Style:=psClear;
         listView.Canvas.brush.Style:=bsClear;
         listView.Canvas.font.Assign(listView.font);
       end;
+      if listView.focused = self then
+        DrawFocusRect(listView.Canvas.Handle,rect(0,y,listView.ClientWidth-listView.F_VScroll.Width,y+listView.RowHeight));
+
       if rec.right>x-5 then begin
         case listView.RootLineMode of
           lmDot:  listView.DrawAlignDotLine(x-5,y,x-5,y+listView.RowHeight div 2,listView.F_RootLineColor);
@@ -1448,7 +1510,7 @@ begin
           listView.Canvas.TextRect(rec,x+2,y,Caption);
         end;
       end;
-  //    selected:=listView.selected = self;
+  //    selected:=listView.focused = self;
       x2:=-listView.F_HScroll.Position;
       for i:=0 to min(listView.F_Header.Sections.Count-2,RecordItems.Count-1) do begin
         x2:=x2+listView.F_Header.Sections[i].Width;
@@ -1511,7 +1573,7 @@ end;
 //Destroy
 destructor TTreeListItem.destroy;
 begin
-  if self=TreeListView.selected then TreeListView.selected:=nil;
+  if self=TreeListView.focused then TreeListView.focused:=nil;
   F_RecordItems.free;
   F_SubItems.free;
   inherited;
@@ -1626,14 +1688,14 @@ begin
   RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
 end;
 
-procedure TW32TreeListView.SetSelected(const AValue: TTreeListItem);
+procedure TW32TreeListView.SetFocused(const AValue: TTreeListItem);
 var rindex:longint;
 begin
-  if AValue=F_Selected then exit;
-  F_Selected:=AValue;
+  if AValue=F_Focused then exit;
+  F_Focused:=AValue;
   DoSelect;
-  if selected<>nil then begin
-    rindex:=Items.RealIndexOf(selected,[]);
+  if focused<>nil then begin
+    rindex:=Items.RealIndexOf(focused,[]);
     if rindex<F_VScroll.Position then F_VScroll.Position:=rindex
     else if rindex>F_VScroll.Position+VisibleRowCount-1 then F_VScroll.Position:=rindex-VisibleRowCount+1;
   end;
@@ -1643,6 +1705,13 @@ begin
     F_VScroll.Position:=min(F_VScroll.Position-1,F_VScroll.Position+(temp-F_Header.Height-rowHeight-3) div RowHeight);
   if temp>ClientHeight-F_HScroll.Height then
     F_VScroll.Position:=max(F_VScroll.Position+1,F_VScroll.Position+((temp-ClientHeight+F_HScroll.Height+F_Header.Height) div RowHeight));}
+end;
+
+procedure TW32TreeListView.SetSelected(const AValue: TTreeListItem);
+begin
+  removeSelection(items);
+  if Avalue<>nil then AValue.F_Selected:=true;
+  SetFocused(AValue);
 end;
 
 procedure TW32TreeListView.SetSorted(const AValue: boolean);
@@ -1668,9 +1737,24 @@ begin
   if assigned(F_CustomRecordItemDraw) then F_CustomRecordItemDraw(self,eventTyp_cdet,parentItem,recordItem,xpos,ypos,xColumn,result);
 end;
 
+procedure TW32TreeListView.removeSelection(list: TTreeListItems);
+var i:longint;
+begin
+  for i:=0 to list.count-1 do begin
+    list[i].F_Selected:=false;
+    removeSelection(list[i].SubItems);
+  end;
+end;
+
+procedure TW32TreeListView.SetMultiSelect(value: boolean);
+begin
+  F_MultiSelect:=value;
+  if not F_MultiSelect then Selected:=focused;
+end;
+
 procedure TW32TreeListView.DoSelect;
 begin
-  if assigned(F_OnSelect) then F_OnSelect(self,selected);
+  if assigned(F_OnSelect) then F_OnSelect(self,focused);
 end;
 
 //Kommunikationsroutinen (Set- und Getfunktionen)
@@ -1916,6 +2000,32 @@ begin
   F_HScroll.Width:=ClientWidth-F_VScroll.Width;
 end;
 
+procedure TW32TreeListView.selectRange(a, b: TTreeListItem);
+var temp: TTreeListItem;
+begin
+  if items.count=0 then exit;
+  if a=nil then a:=items[0];
+  if b=nil then a:=items[items.count-1];
+  if items.RealIndexOf(a,[ricCountCollapsedsubItems])>items.RealIndexOf(b,[ricCountCollapsedsubItems]) then begin
+    temp:=a;
+    a:=b;
+    b:=temp;
+  end;
+  removeSelection(Items);
+  temp:=a;
+  a.f_Selected:=true;
+  F_SelCount:=1;
+  while (temp<>b) do begin
+    a:=temp;
+    temp:=temp.GetNextItem();
+    if temp=a then break;
+    temp.F_Selected:=true;
+    F_SelCount:=F_SelCount+1;
+  end;
+  DoSelect;
+  Paint;
+end;
+
 procedure TW32TreeListView.UpdateScrollSize;
 var i,j:integer;
 begin
@@ -1957,10 +2067,12 @@ procedure TW32TreeListView.WndProc(var message:TMessage);
 ///var TreeListRecordText:TTreeListRecordItemText;
 var temp:integer;
     tempRecordItemText:TTreeListRecordItemText;
-    itemAtPos: TTreeListItem;
+    itemAtPos,nextToFocus: TTreeListItem;
     selectedText: TTreeListRecordItemText;
-begin
+    shiftState: TShiftState;
 
+begin
+  nextToFocus:=nil;
   case message.Msg of
     WM_GETDLGCODE:  message.Result:=DLGC_WANTARROWS or DLGC_WANTCHARS;
     WM_MOUSEWHEEL: if F_VScroll.Visible and F_VScroll.Enabled then begin
@@ -1986,62 +2098,74 @@ begin
                     end;
                   end;
     WM_LBUTTONDOWN: begin
-                      SetFocus;
-                      itemAtPos:=GetItemAtPos(TWMLBUTTONDOWN(message).YPos);
-                      if (itemAtPos<>nil) and (TWMLBUTTONDOWN(message).XPos<itemAtPos.F_Indent*15-1+StartX)
-                         and (TWMLBUTTONDOWN(message).XPos>itemAtPos.F_Indent*15-10+StartX) then begin
-                        itemAtPos.Expanded:=not itemAtPos.Expanded;
-                        if itemAtPos=selected then paint;
-                      end;
-                      if (itemAtPos<>nil)and(assigned (F_ClickAtItem)) then F_ClickAtItem(self,itemAtPos);
-                      if (itemAtPos<>nil)and(assigned (F_ClickAtRecordItemText)) then begin
-                        tempRecordItemText:=itemAtPos.GetRecordItemTextAtPos(self,TWMLBUTTONDOWN(message).XPos);
-                        if tempRecordItemText<>nil then
-                          F_ClickAtRecordItemText(self,itemAtPos,tempRecordItemText);
-                      end;
-                      selected:=itemAtPos;
-                      inherited;
-                    end;
+      shiftState:=KeyDataToShiftState(TWMLBUTTONDOWN(message).Keys);
+      SetFocus;
+      itemAtPos:=GetItemAtPos(TWMLBUTTONDOWN(message).YPos);
+      if (itemAtPos<>nil) and (TWMLBUTTONDOWN(message).XPos<itemAtPos.F_Indent*15-1+StartX)
+         and (TWMLBUTTONDOWN(message).XPos>itemAtPos.F_Indent*15-10+StartX) then begin
+        itemAtPos.Expanded:=not itemAtPos.Expanded;
+        if itemAtPos=focused then paint;
+      end;
+      if (itemAtPos<>nil)and(assigned (F_ClickAtItem)) then F_ClickAtItem(self,itemAtPos);
+      if (itemAtPos<>nil)and(assigned (F_ClickAtRecordItemText)) then begin
+        tempRecordItemText:=itemAtPos.GetRecordItemTextAtPos(self,TWMLBUTTONDOWN(message).XPos);
+        if tempRecordItemText<>nil then
+          F_ClickAtRecordItemText(self,itemAtPos,tempRecordItemText);
+      end;
+      nextToFocus:=itemAtPos;
+      if multiSelect and (nextToFocus<>nil) then
+        nextToFocus.Selected:=not nextToFocus.Selected;
+      inherited;
+    end;
     WM_KEYDOWN: begin
-                  case TWMKeyDown(message).CharCode of
-                    VK_UP:
-                      if selected=nil then selected:=Items[0]
-                      else selected:=selected.GetPrevVisibleItem;
+      shiftState:=KeyDataToShiftState(TWMKeyDown(message).KeyData);
+      case TWMKeyDown(message).CharCode of
+        VK_UP:
+          if focused=nil then nextToFocus:=Items[0]
+          else nextToFocus:=focused.GetPrevVisibleItem;
+        VK_DOWN:
+          if focused<>nil then nextToFocus:=focused.GetNextVisibleItem()
+          else if items.count>0 then nextToFocus:=Items[items.count-1];
 
-                    VK_DOWN:
-                      if selected<>nil then selected:=selected.GetNextVisibleItem()
-                      else if items.count>0 then selected:=Items[items.count-1];
+        VK_HOME:
+          if items.count>0 then nextToFocus:=Items[0];
 
-                    VK_HOME:
-                      if items.count>0 then selected:=Items[0];
+        VK_END:
+          if items.count>0 then nextToFocus:=Items[items.count-1].GetLastVisibleSubSubItem;
 
-                    VK_END:
-                      if items.count>0 then selected:=Items[items.count-1].GetLastSubSubItem;
+        VK_PRIOR:
+          if focused<>nil then nextToFocus:=focused.GetPrevVisibleItem(VisibleRowCount)
+          else if items.count>0 then nextToFocus:=Items[0];
 
-                    VK_PRIOR:
-                      if selected<>nil then selected:=selected.GetPrevVisibleItem(VisibleRowCount)
-                      else if items.count>0 then selected:=Items[0];
+        VK_NEXT:
+          if focused<>nil then nextToFocus:=focused.GetNextVisibleItem(VisibleRowCount)
+          else if items.count>0 then nextToFocus:=Items[items.count-1];
 
-                    VK_NEXT:
-                      if selected<>nil then selected:=selected.GetNextVisibleItem(VisibleRowCount)
-                      else if items.count>0 then selected:=Items[items.count-1];
+        VK_RIGHT:
+          if focused<>nil then begin
+            if not focused.Expanded then focused.Expand;
+            if focused.SubItems.Count>0 then nextToFocus:=focused.SubItems[0]
+            else nextToFocus:=focused;
+          end;
 
-                    VK_RIGHT:
-                      if selected<>nil then begin
-                        if not selected.Expanded then selected.Expand;
-                        if selected.SubItems.Count>0 then selected:=selected.SubItems[0];
-                      end;
+        VK_LEFT:
+          if focused<>nil then begin
+            if (focused.Expanded) and (focused.SubItems.Count>0) then focused.Collapse
+            else if focused.Parent<>nil then nextToFocus:=focused.Parent;
+            if nextToFocus=nil then nextToFocus:=focused;
+          end;
 
-                    VK_LEFT:
-                      if selected<>nil then begin
-                        if (selected.Expanded) and (selected.SubItems.Count>0) then selected.Collapse
-                        else if selected.Parent<>nil then selected:=selected.Parent;
-                      end;
+        VK_BACK:
+          if (focused<>nil) and (focused.Parent<>nil) then nextToFocus:=focused.Parent;
 
-                    VK_BACK:
-                      if (selected<>nil) and (selected.Parent<>nil) then selected:=selected.Parent;
-                  end;
-                end;
+        VK_SPACE:
+          if (focused <> nil) and (ssCtrl in shiftState) then begin
+            if ssShift in shiftState then Selected:=focused
+            else focused.Selected:=not focused.Selected;
+            F_BaseSelect:=focused;
+          end;
+      end;
+    end;
     WM_SETFOCUS:    begin
                       Paint;
                       inherited;
@@ -2072,6 +2196,17 @@ begin
     WM_ERASEBKGND: message.Result:=1;
     else inherited;
   end;
+  if nextToFocus<>nil then begin //select or focus
+    if not multiSelect or (shiftState=[]) then begin
+      Selected:=nextToFocus;
+      F_BaseSelect:=Selected;
+    end else if shiftState=[ssCtrl] then focused:=nextToFocus
+    else if ssShift in shiftState then begin
+      F_Focused:=nextToFocus;
+      SelectRange(F_BaseSelect,nextToFocus);
+    end;
+  end;
+    
 end;
 
 //Ausgaberoutinen
@@ -2118,7 +2253,8 @@ begin
         end;
         //Items
         ypos:=TopPos;
-        xpos:=13-F_HScroll.Position;
+        if RootLineMode <> lmNone then xpos:=13-F_HScroll.Position
+        else xpos:=3-F_HScroll.Position;
         StartX:=xpos;
         for i:=0 to Items.count-1 do begin
           (TObject(Items[i]) as TTreeListItem).PaintTo(self,xpos,ypos,0,i = Items.count-1);
