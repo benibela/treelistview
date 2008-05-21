@@ -15,11 +15,12 @@
      Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Licence
      
   Zusammenfassung:
-  Summary:
     - Sie müssen den Urheber angeben
     - Sie dürfen die Komponente nicht für kommerzielle Zwecke benutzen
     - Die Komponente darf nur unter denselben Lizenzbedingungen veröffentlicht 
       und verändert werden.
+
+  Summary:
     - You must give the original author credit.
     - You may not use this work for commercial purposes.
     - If you alter, transform, or build upon this work, you may distribute the 
@@ -27,11 +28,17 @@
 *******************************************************************************}
 
 unit TreeListView;
-{$mode delphi}
+{$ifdef fpc}
+  {$mode delphi}
+{$endif}
+{$ifdef clr}
+  {$UNSAFECODE ON}
+{$endif}
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,math;
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,math
+  {$ifdef clr},types{$endif};
 
 type
   {$TYPEINFO ON}
@@ -41,7 +48,7 @@ type
   TW32TreeListView = class;
 
   TImageTyp=(itNone,itListIndex,itBitmap);
-  TObjectList=class(TList)
+  TObjectList= class(TList)
     public
       //Events
       OnChanging:TNotifyEvent;
@@ -76,8 +83,8 @@ type
       procedure DoChanging;virtual;
       procedure DoChange;virtual;
 
-      function Add(Item: Pointer): Integer;
-      procedure Insert(Index: Integer; Item: Pointer);
+      function Add(Item: TObject): Integer;
+      procedure Insert(Index: Integer; Item: TObject);
       function Remove(Item: TObject): Integer;
   end;
 
@@ -95,15 +102,15 @@ type
     function Get(Index: Integer): TTreeListItem; inline;
   public
     procedure Sort(CompareFunc: TTreeListItemCompare);
-    function Add:TTreelistItem;
-    function AddWithCaption(caption:string):TTreelistItem;
-    function AddChild(Parent:TTreeListItem):TTreelistItem;
-    function AddChildWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
+    function Add:TTreelistItem;overload;
+    function Add(caption:string):TTreelistItem;overload;
+    function Add(Parent:TTreeListItem):TTreelistItem;overload;
+    function Add(Parent:TTreeListItem;caption:string):TTreelistItem;overload;
     function GetRealItemCount(const countTyp:TRealItemCounting ) :integer;
     function GetItemWithRealIndex(index:integer):TTreeListItem;
     function RealIndexOf(const item:ttreeListItem;const countTyp:TRealItemCounting):integer;
 
-    function FindItemWithCaption(caption: string): TTreeListItem;
+    function FindItemWithText(caption: string): TTreeListItem;
     function FindItemWithRecordText(pos: longint; text: string):TTreeListItem;
 
     property Items[Index: Integer]: TTreeListItem read Get write Put; default;
@@ -116,11 +123,11 @@ type
     Owner: TTreeListItem;
     function Get(Index: Integer): TTreeListRecordItem;
     procedure Put(Index: Integer; const AValue: TTreeListRecordItem);
-  published
-    function Add:TTreeListRecordItem;
-    function AddWithText(s: string):TTreeListRecordItem;
-    procedure AddItem(recordItem: TTreeListRecordItem);
+  public
     property Items[Index: Integer]: TTreeListRecordItem read Get write Put; default;
+    function Add:TTreeListRecordItem;overload;
+    function Add(s: string):TTreeListRecordItem;overload;
+    procedure AddItem(recordItem: TTreeListRecordItem);
   end;
 
 
@@ -138,7 +145,7 @@ type
       procedure SetText(caption:string);
     public
       procedure selectFont(listView:TW32TreeListView);
-      procedure PaintTo(const listView:TW32TreeListView;x:integer;const y,xColumn:integer;const parentItem:TTreeListItem);
+      //procedure PaintTo(const listView:TW32TreeListView;x:integer;const y,xColumn:integer;const parentItem:TTreeListItem);
 
       function GetNecessaryWidth(listView:TW32TreeListView=nil): longint;
 
@@ -151,12 +158,14 @@ type
 
   TExpandItemEvent = procedure (Sender: TObject; Item: TTreeListItem);
   TTreeListItem=class(TPersistent)
+  private
+    function GetText: string;
+    procedure SetText(const AValue: string);
     protected
       F_IndexOrBitmap:cardinal;
       F_ImageTyp:TImageTyp;
       F_SubItems:TTreeListItems;
       F_RecordItems:TRecordItemList;
-      F_caption:string;
       F_Expanded,F_Selected,F_MouseSelected:boolean;
 
       F_Indent:integer; //Gibt an, wieoft, das Item eingerückt wurde, diese Eigenschaft wird von PaintTo und GetItemAtPosWithIndentSet gesetzt, und muss *nicht* stimmmen
@@ -166,12 +175,12 @@ type
 
   //   F_ParentFont:boolean;
   //    F_Font:TFont;
+      function GetExtendingButtonPos: longint;
 
       procedure DoChange;
       procedure DoChanging;
 
       procedure SetSelected(newSelected: boolean);
-      function drawSelected:boolean;
 
       procedure SetSubItems(const value:TtreeListItems);
       procedure SetRecordItems(const value:TRecordItemList);
@@ -183,8 +192,8 @@ type
       Tag:longint;
 
       //Create
-      constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview);
-      constructor createWithCaption(const parent:TTreeListItem;const TreeListView:Tw32treelistview;const ACaption:string);
+      constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview);overload;
+      constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview;const ACaption:string);overload;
 
       function GetItemAtPos(const listView:TW32TreeListView;const TestY:integer;var startY:integer):TTreeListItem;
       function GetItemAtPosWithIndentSet(const listView:TW32TreeListView;const TestY,Indent:integer;var startY:integer):TTreeListItem;
@@ -210,19 +219,21 @@ type
       property Parent:TTreeListItem read F_parent;
       property TreeListView:Tw32TreeListView read F_TreeListview;
 
-      procedure PaintTo(const listView:TW32TreeListView;const x:integer;var y:integer;const xColumn:integer;const last:boolean);
+      procedure PaintTo(const listView:TW32TreeListView;var y:integer;const xColumn:integer;const last:boolean);
 
       //Destroy
       destructor destroy;override;
 
+      function SeemsSelected:boolean;
       property Indent:integer read F_Indent;
       property Expanded:boolean read F_expanded write SetExpand;
+
+      property RecordItemsText[i: Integer]:string read GetRecordItemsText write SetRecordItemsText;
     published
       property RecordItems:TRecordItemList read F_RecordItems write SetRecordItems;
-      property RecordItemsText[i: Integer]:string read GetRecordItemsText write SetRecordItemsText;
       property SubItems:TTreeListItems read F_SubItems write SetSubItems;
       property IndexOrBitmap:cardinal read F_indexOrBitmap write F_indexOrBitmap;
-      property Caption:string read F_Caption write F_Caption;
+      property Text:string read GetText write SetText;
       property ImageTyp:TImageTyp read F_ImageTyp write F_ImageTyp;
       property Selected: boolean read F_Selected write SetSelected;
 //      property Font:TFont read F_Font write SetFont
@@ -275,6 +286,8 @@ type
 
 
     //appearance
+    F_TreeSectionPos: TRect;
+    
     F_HotTrackFont:TFont;
     F_HotTrackSubTextItems:boolean;
 
@@ -348,13 +361,17 @@ type
     procedure SetFocused(const AValue: TTreeListItem);
     procedure SetSelected(const AValue: TTreeListItem);
 
+    function GetColumnsDragable: boolean;
+    procedure SetColumnsDragable(const AValue: boolean);
+
     procedure SetTopPos(const i:integer);
     function GetTopPos:integer;
 
     procedure SetSorted(const AValue: boolean);
 
-    procedure SetHeaderSections(const value:THeaderSections);
-    function GetHeaderSections: THeaderSections;
+    procedure SetColumns(const value:THeaderSections);
+    function GetColumns: THeaderSections;
+    function GetColumnFromOriginalIndex(i:longint):THeaderSection;
 
     procedure setImageList(const images:TImageList);
 
@@ -377,6 +394,7 @@ type
     procedure _HeaderSectionResize( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionDblClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
+    procedure _HeaderSectionEndDrag(Sender: TObject);
     procedure _HScrollChange(Sender: TObject);
     procedure _VScrollChange(Sender: TObject);
 
@@ -426,6 +444,7 @@ type
     { Published-Deklarationen }
     {-------------------------------START Ereignisse---------------------------}
     property Sorted: boolean read F_Sorted write SetSorted;
+    property ColumnsDragable: boolean read GetColumnsDragable write SetColumnsDragable;
 
     //Scrollbarereignisse
     property OnVScrollBarChange:TNotifyEvent read F_VScrollBarChange write F_VScrollBarChange;
@@ -487,7 +506,7 @@ type
 {--------------------------------ENDE Ereignisss---------------------------}
 
     //Header-Eigenschaften
-    property HeaderSections:THeaderSections read GetHeaderSections write SetHeaderSections;
+    property Columns:THeaderSections read GetColumns write SetColumns;
 
     property RowHeight:integer read F_RowHeight write SetRowHeight;
 
@@ -546,7 +565,9 @@ procedure Register;
 implementation
 
 const HeaderItemDistance=2; //Distance between Header and first drawn item
-
+      LEFT_TEXT_PADDING=3;
+      LINE_DISTANCE=15;
+      EXPANDING_BUTTON_WIDTH=9;
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{
 ################################################################################
 ================================================================================
@@ -606,7 +627,7 @@ begin
 end;
 
 //Eventauslöser
-function TObjectList.Add(Item: Pointer): Integer;
+function TObjectList.Add(Item: TObject): Integer;
 begin
   if not editing then
     DoChanging;
@@ -648,11 +669,11 @@ begin
   if not editing then
     DoChange;
 end;
-procedure TObjectList.Insert(Index: Integer; Item: Pointer);
+procedure TObjectList.Insert(Index: Integer; Item: TObject);
 begin
   if not editing then
     DoChanging;
-  inherited;
+  inherited insert(index,item);
   if not editing then
     DoChange;
 end;
@@ -733,7 +754,7 @@ begin
   inherited put(Index, AValue);
 end;
 
-function TTreeListItems.Get(Index: Integer): TTreeListItem; inline;
+function TTreeListItems.Get(Index: Integer): TTreeListItem; {$ifdef fpc}inline;{$endif}
 begin
   result:=TTreeListItem(inherited get(index));
 end;
@@ -742,28 +763,42 @@ procedure TTreeListItems.Sort(CompareFunc: TTreeListItemCompare);
 var temp: array of TTreeListItem;
 
   procedure mergeSort(f,t:longint);
-  var a,b,d,p: longint;
+  var i,a,b,d,p: longint;
   begin
     if f>=t then exit;
     d:=(f+t) div 2;
     mergeSort(f,d);
     mergeSort(d+1,t);
+    {$ifdef fpc}
     system.move(List^[f],temp[f],(t-f+1)*sizeof(TTreeListItem));
+    {$else}
+    for i := f to t  do
+      temp[i]:=TTreeListItem(List[i]);
+    {$endif}
     p:=f;
     a:=f;
     b:=d+1;
     while (a<=d) and (b<=t) do begin
       if CompareFunc(temp[a],temp[b])<=0 then begin
-        List^[p]:=temp[a];
-        a+=1;
+        List[p]:=temp[a];
+        inc(a);
       end else begin
-        List^[p]:=temp[b];
-        b+=1;
+        List[p]:=temp[b];
+        inc(b);
       end;
-      p+=1;
+      inc(p);
     end;
-    if a<=d then system.move(temp[a],List^[p],(d-a+1)*sizeof(TTreeListItem));
-    if b<=t then system.move(temp[b],List^[p],(t-b+1)*sizeof(TTreeListItem));
+    if a<=d then begin
+      f:=a;
+      t:=d;
+    end else if b<=t then f:=b
+    else exit;
+    {$ifdef fpc}
+      system.move(temp[f],List[p],(t-f+1)*sizeof(TTreeListItem));
+    {$else}
+      for i := f to t  do
+        List[i+p-f]:=temp[i];
+    {$endif}
   end;
 var i:longint;
 begin
@@ -792,9 +827,9 @@ begin
   inherited add(result);
 end;
 
-function TTreeListItems.AddWithCaption(caption:string):TTreelistItem;
+function TTreeListItems.Add(caption:string):TTreelistItem;
 begin
-  Result:=TTreeListItem.CreateWithCaption(F_Parent,F_TreeListView, caption);
+  Result:=TTreeListItem.Create(F_Parent,F_TreeListView, caption);
   Result.RecordItems.OnChanging:=OnChanging;
   Result.RecordItems.OnChange:=OnChange;
   Result.SubItems.OnChanging:=OnChanging;
@@ -802,16 +837,16 @@ begin
   inherited add(result);
 end;
 
-function TTreeListItems.AddChild(Parent:TTreeListItem):TTreelistItem;
+function TTreeListItems.Add(Parent:TTreeListItem):TTreelistItem;
 begin
-  if Parent=nil then exit(Add)
-  else exit(Parent.SubItems.Add);
+  if Parent=nil then result:=Add
+  else result:=Parent.SubItems.Add;
 end;
 
-function TTreeListItems.AddChildWithCaption(Parent:TTreeListItem;caption:string):TTreelistItem;
+function TTreeListItems.Add(Parent:TTreeListItem;caption:string):TTreelistItem;
 begin
-  result:=AddChild(Parent);
-  result.Caption:=caption;
+  result:=Add(Parent);
+  result.Text:=caption;
 end;
 
 function tTreeListItems.GetRealItemCount(const countTyp:TRealItemCounting ) :integer;
@@ -861,14 +896,16 @@ begin
   else Result:=-1;
 end;
 
-function TTreeListItems.FindItemWithCaption(caption: string): TTreeListItem;
+function TTreeListItems.FindItemWithText(caption: string): TTreeListItem;
 var i:longint;
 begin
   result:=nil;
   for i:=0 to count-1 do
-    if Items[i].Caption=caption then exit(Items[i])
-    else begin
-      result:=Items[i].SubItems.FindItemWithCaption(caption);
+    if Items[i].Text=caption then begin
+      result:=Items[i];
+      exit;
+    end else begin
+      result:=Items[i].SubItems.FindItemWithText(caption);
       if result<>nil then exit;
     end;
 end;
@@ -879,8 +916,10 @@ var i:longint;
 begin
   result:=nil;
   for i:=0 to count-1 do
-    if Items[i].RecordItemsText[pos]=text then exit(Items[i])
-    else begin
+    if Items[i].RecordItemsText[pos]=text then begin
+      result:=Items[i];
+      exit;
+    end else begin
       result:=Items[i].SubItems.FindItemWithRecordText(pos,text);
       if result<>nil then exit;
     end;
@@ -943,7 +982,7 @@ begin
   inherited add(recordItem);
 end;
 
-function TRecordItemList.AddWithText(s: string): TTreeListRecordItem;
+function TRecordItemList.Add(s: string): TTreeListRecordItem;
 begin
   result:=Add;
   result.Text:=s;
@@ -972,16 +1011,16 @@ end;
 procedure TTreeListRecordItem.selectFont(listView:TW32TreeListView);
 begin
   if listView.hotTrackedRecordItem = self then begin
-    if F_Parent.drawSelected then
+    if F_Parent.SeemsSelected then
      listView.Canvas.Font.Assign(listView.HotTrackFont)//SelectedHotTrackFont)
     else
      listView.Canvas.Font.Assign(listView.HotTrackFont);
-   end else if F_Parent.drawSelected then
+   end else if F_Parent.SeemsSelected then
     listView.Canvas.Font.Assign(listView.SelectedFont)
    else
     listView.Canvas.Font.Assign(listView.Font);
 end;
-
+     (*
 procedure TTreeListRecordItem.PaintTo(const listView:TW32TreeListView;x:integer;const y,xColumn:integer;const parentItem:TTreeListItem);
 var i:integer;
     ausgabeRect:TRect;
@@ -993,24 +1032,8 @@ begin
   ausgabeRect.Bottom:=y+listView.RowHeight;
   listView.Canvas.brush.Style:=bsClear;
 
- (*  if listView.hotTrackedRecordItem=self then begin
-      if TTreeListRecordItemText(TextItems[i]).ParentHotTrackFont then begin
-        if parentItem.drawSelected then
-          listView.Canvas.Font.Assign(listView.SelectHotTrackFont)
-         else
-          listView.Canvas.Font.Assign(listView.HotTrackFont);
-      end else
-        listView.Canvas.Font.Assign(TTreeListRecordItemText(TextItems[i]).F_HotTrackFont)
-
-//      listView.Canvas.Font.Assign(TTreeListRecordItemText(TextItems[i]).F_HotTrackFont)
-    end else {if listView.Canvas.Font.Handle<>listView.Font.Handle then}
-      if parentItem.drawSelected  then
-        listView.Canvas.Font.Assign(listView.SelectedFont)
-       else
-        listView.Canvas.Font.Assign(listView.Font);*)
-
   DrawText(listView.Canvas.Handle,pchar(text),length(text),ausgabeRect,DT_LEFT or DT_NOPREFIX or DT_SINGLELINE or DT_VCENTER or DT_WORD_ELLIPSIS);
-end;
+end;*)
 
 function TTreeListRecordItem.GetNecessaryWidth(listView:TW32TreeListView=nil): longint;
 var i:integer;
@@ -1053,15 +1076,16 @@ end;
 //Create
 constructor TTreeListItem.create(const Parent:TTreeListItem;const TreeListView:TW32TreeListView);
 begin
-  createWithCaption(Parent,TreeListView,'');
+  create(Parent,TreeListView,'');
 end;
 
-constructor TTreeListItem.createWithCaption(const Parent:TTreeListItem;const TreeListView:TW32TreeListView;const ACaption:string);
+constructor TTreeListItem.create(const Parent:TTreeListItem;const TreeListView:TW32TreeListView;const ACaption:string);
 begin
+  inherited create;
   F_Parent:=parent;
-  F_caption:=ACaption;
   F_RecordItems:=TRecordItemList.create;
   F_RecordItems.Owner:=self;
+  F_RecordItems.Add(ACaption);
   F_SubItems:=TTreeListItems.create(self,TreeListView);
   F_Indent:=-1;
   F_TreeListView:=TreeListView;
@@ -1071,20 +1095,35 @@ end;
 
 function TTreeListItem.GetRecordItemsText(i: Integer): string;
 begin
-  if i=-1 then result:=caption
-  else if i<RecordItems.Count then result:=RecordItems[i].Text
+  if i<RecordItems.Count then result:=RecordItems[i].Text
   else result:='';
 end;
 
 procedure TTreeListItem.SetRecordItemsText(i: Integer; const AValue: string);
 var j:longint;
 begin
-  if i=-1 then caption:=AValue
-  else if i<RecordItems.Count then RecordItems[i].Text:=AValue
+  if i<RecordItems.Count then RecordItems[i].Text:=AValue
   else begin
-    for j:=RecordItems.Count to i-1 do RecordItems.AddWithText('');
-    RecordItems.AddWithText(AValue);
+    for j:=RecordItems.Count to i-1 do RecordItems.Add('');
+    RecordItems.Add(AValue);
   end;
+end;
+
+function TTreeListItem.GetText: string;
+begin
+  if RecordItems.Count>0 then result:=RecordItems[0].Text
+  else result:='';
+end;
+
+procedure TTreeListItem.SetText(const AValue: string);
+begin
+  if RecordItems.Count>0 then RecordItems[0].Text:=AValue
+  else RecordItems.Add(AValue);
+end;
+
+function TTreeListItem.GetExtendingButtonPos: longint;
+begin
+  result:=TreeListView.F_TreeSectionPos.left+(F_Indent+1)*LINE_DISTANCE-10;
 end;
 
 procedure TTreeListItem.DoChange;
@@ -1108,7 +1147,7 @@ begin
   DoChange;
 end;
 
-function TTreeListItem.drawSelected: boolean;
+function TTreeListItem.SeemsSelected: boolean;
 begin
   if TreeListView.F_MouseSelecting then result:=Selected xor F_MouseSelected
   else result:=Selected;
@@ -1187,8 +1226,10 @@ begin
   x:=listView.F_Header.Sections[0].Width;
   for i:=0 to min(listView.F_Header.Sections.Count-2,RecordItems.Count-1) do begin
     if TestX<x then exit;
-    if (x+listView.F_Header.Sections[i+1].Width>TestX) then
-      exit(RecordItems[i]);
+    if (x+listView.F_Header.Sections[i+1].Width>TestX) then begin
+      result:=RecordItems[i];
+      exit;
+    end;
     x:=x+listView.F_Header.Sections[i+1].Width;
   end;
 end;
@@ -1196,8 +1237,8 @@ end;
 function TTreeListItem.GetMaxColumnWidth(const id: longint): longint;
 var i,temp:longint;
 begin
-  if id=-1 then result:=TreeListView.Canvas.TextWidth(caption)+15*F_Indent+13
-  else result:=TreeListView.Canvas.TextWidth(RecordItemsText[id]); //use getnecessarywidth??
+  if id=0 then result:=RecordItems[0].GetNecessaryWidth()+15*F_Indent+13
+  else result:=RecordItems[id].GetNecessaryWidth();
   for i:=0 to SubItems.Count-1 do begin
     temp:=SubItems[i].GetMaxColumnWidth(id);
     if temp>result then result:=temp;
@@ -1261,7 +1302,10 @@ end;
 function TTreeListItem.GetNextVisibleItem(Delta: longint=1): TTreeListItem;
 var next: TTreeListItem;
 begin
-  if Delta<0 then exit(GetPrevVisibleItem(-Delta));
+  if Delta<0 then begin
+    result:=GetPrevVisibleItem(-Delta);
+    exit;
+  end;
   Result:=self;
   while delta>0 do begin
     if (result.SubItems.Count>0) and (result.Expanded) then
@@ -1272,14 +1316,17 @@ begin
       if next=result then exit;
     end;
     result:=next;
-    delta-=1;
+    dec(delta,1);
   end;
 end;
 
 function TTreeListItem.GetPrevVisibleItem(Delta: longint): TTreeListItem;
 var temp:longint;
 begin
-  if Delta<0 then exit(GetNextVisibleItem(-Delta));
+  if Delta<0 then begin
+    result:=GetNextVisibleItem(-Delta);
+    exit;
+  end;
   Result:=self;
   while delta>0 do begin
     if result.Parent=nil then begin
@@ -1290,7 +1337,7 @@ begin
       if temp=0 then result:=result.parent
       else result:=result.parent.SubItems[temp-1].GetLastVisibleSubSubItem;
     end;
-    Delta-=1;
+    dec(Delta);
   end
 end;
 
@@ -1316,143 +1363,178 @@ begin
   if result=nil then result:=self;
 end;
 
-procedure TTreeListItem.PaintTo(const listView:TW32TreeListView;const x:integer;var y:integer;const xColumn:integer;const last:boolean);
-var i,x2,yold,tempX:integer;
+procedure TTreeListItem.PaintTo(const listView:TW32TreeListView;var y:integer;const xColumn:integer;const last:boolean);
+var i,yold,realPos,recordId:integer;
     defaultDraw:boolean;
     rec:Trect;
+  procedure drawTextRect(s:string;x:longint);
+  var temp: TRect;
+  begin
+    temp:=rec;
+    temp.left:=x;
+    {$IFDEF CLR}
+    DrawText(listview.canvas.Handle,s,length(s),
+             temp,DT_LEFT or DT_NOPREFIX or DT_SINGLELINE or DT_VCENTER or DT_WORD_ELLIPSIS);
+    {$ELSE}
+    DrawText(listview.canvas.Handle,pchar(s),length(s),
+             temp,DT_LEFT or DT_NOPREFIX or DT_SINGLELINE or DT_VCENTER or DT_WORD_ELLIPSIS);
+    {$ENDIF}
+  end;
+  procedure drawTreeColumnText;
+  var textStartX: longint;
+  begin
+    textStartX:=Rec.Left+LEFT_TEXT_PADDING+xColumn*LINE_DISTANCE+listview.startx;
+    if (ImageTyp<>itNone) then begin
+      case ImageTyp of
+        itListIndex:
+          if listView.Images<>nil then begin
+            listView.Images.draw(listView.Canvas,textStartX,rec.Top,IndexOrBitmap);
+            drawTextRect(Text,textStartX+listView.Images.Width+LEFT_TEXT_PADDING);
+          end;
+        itBitmap:
+          if (TObject(IndexOrBitmap)<>nil)and(TObject(IndexOrBitmap)is TBitmap) then begin
+            listView.Canvas.Draw(textStartX,rec.top,TBitmap(TObject(IndexOrBitmap)));
+            drawTextRect(Text,textStartX+TBitmap(TObject(IndexOrBitmap)).Width+LEFT_TEXT_PADDING);
+          end;
+      end;
+    end else
+      drawTextRect(Text,textStartX);
+  end;
+  procedure drawTreeColumn;
+  var i,tempX:longint;
+      tempColor:TColor;
+  begin
+    tempX:=rec.left;
+    if listView.RootLineMode <> lmNone then begin
+      //draw vertical item lines (not ending items)
+      tempX:=tempX+LINE_DISTANCE div 2+1;
+      for i:=0 to xColumn do begin
+        if tempx>rec.right then break;
+        if listView.LastItems[i] then
+          if listView.RootLineMode=lmDot then
+            listView.DrawAlignDotLine(tempX,yold,tempX,y-1,listView.F_RootLineColor)
+           else with listView.canvas do begin
+             pen.color:=listView.F_RootLineColor;
+             pen.Style:=psSolid;
+             MoveTo(tempX,yold);
+             LineTo(tempX,y);
+           end;
+        tempX:=tempX+LINE_DISTANCE;
+      end;
+
+      tempX:=tempX-LINE_DISTANCE div 2-3;
+
+      //draw vertical item lines (ending items)
+      case listView.RootLineMode of
+        lmDot:  begin
+          listView.DrawAlignDotLine(tempX-5,yold+listView.RowHeight div 2,min(tempX,rec.right),yold + listView.RowHeight div 2,listView.F_RootLineColor);
+          listView.DrawAlignDotLine(tempX-5,yold,tempX-5,yold+listView.RowHeight div 2,listView.F_RootLineColor);
+        end;
+        lmSolid: with listView.canvas do begin
+           pen.color:=listView.F_RootLineColor;
+           pen.Style:=psSolid;
+           MoveTo(tempX-5,yold+listView.RowHeight div 2);
+           LineTo(min(tempX,rec.right),yold + listView.RowHeight div 2);
+             MoveTo(tempX-5,yold);
+             LineTo(tempX-5,yold+listView.RowHeight div 2);
+         end;
+      end;
+    end;
+
+    if not defaultDraw then exit;
+
+    if (yold>listView.F_Header.Height)
+       and(rec.right-rec.left>EXPANDING_BUTTON_WIDTH)
+       and(SubItems.Count>0)  then begin
+      tempX:=GetExtendingButtonPos;
+      tempColor:=listView.Canvas.brush.Color;
+      listView.Canvas.pen.Style:=psSolid;
+      listView.Canvas.pen.Color:=clBlack;
+      listView.Canvas.brush.Style:=bsSolid;
+      listView.Canvas.brush.Color:=listView.ButtonColor;
+      //draw expanding/de button
+      listView.canvas.Rectangle(tempX,yold+listView.RowHeight div 2-5,tempX+9,yold+listView.RowHeight div 2+4);
+      listView.canvas.moveTo(tempX+2,yold+listView.RowHeight div 2-1); //draw ---
+      listView.canvas.LineTo(tempX+7,yold+listView.RowHeight div 2-1);
+      if not Expanded then begin                                   //draw  |   also -|-
+        listView.canvas.moveTo(tempX+4,yold+listView.RowHeight div 2-3);
+        listView.canvas.LineTo(tempX+4,yold+listView.RowHeight div 2+2);
+      end;
+      listView.Canvas.brush.Color:=tempColor;
+    end;
+  end;
 begin
   listView.LastItems[xColumn]:=not last;
-
   if y+listView.RowHeight>listView.ClientHeight-listView.F_HScroll.Height then exit;
   listView.PaintEvenItem:=not listView.PaintEvenItem;
   if listView.StripInvisibleItems and not Expanded then
     if (SubItems.GetRealItemCount([ricCountCollapsedSubItems]) and $1=0) then
       listView.PaintEvenItem:=not listView.PaintEvenItem;
-  //item bg color
-  if listView.Striped then begin
+  F_Indent:=xColumn;
+  //item bg color/font
+  if SeemsSelected then begin
+    listView.Canvas.Brush.color:=listView.SelectBackColor;
+    listView.Canvas.Brush.style:=bsSolid;
+  end else if listView.Striped then begin
     listView.canvas.Brush.Style:=bsSolid;
     if listView.PaintEvenItem then listView.canvas.Brush.Color:=listView.StripedEvenColor
     else listView.canvas.Brush.Color:=listView.StripedOddColor;
-  end;
-  //event handling
-  defaultDraw:=listView.DoCustomItemDrawEvent(cdevtPrePaint,self,x,y,xColumn,last);
-  F_Indent:=xColumn;
+  end else listView.Canvas.Brush.style:=bsClear;
+  defaultDraw:=listView.DoCustomItemDrawEvent(cdevtPrePaint,self,0,y,xColumn,last); //event handling
   yold:=y;
-  if defaultDraw then begin
-    if y>listView.F_Header.Height then begin
-      listView.Canvas.FillRect(rect(0,y,listView.ClientWidth-listview.f_vscroll.width,y+listView.rowHeight));
-      rec.Left:=x;
-      rec.top:=y;
-      rec.right:=listView.F_Header.Sections[0].Width-14+listView.StartX;
-      rec.Bottom:=y+listView.RowHeight;
-      case listView.RootLineMode of
-        lmDot:  listView.DrawAlignDotLine(x-5,y+listView.RowHeight div 2,min(x,rec.right),y + listView.RowHeight div 2,listView.F_RootLineColor);
-        lmSolid: with listView.canvas do begin
-                   pen.color:=listView.F_RootLineColor;
-                   pen.Style:=psSolid;
-                   MoveTo(x-5,y+listView.RowHeight div 2);
-                   LineTo(min(x,rec.right),y + listView.RowHeight div 2);
-                 end;
-      end;
-      if drawSelected then begin
-        listView.Canvas.pen.Style:=psClear;
-        listView.Canvas.Brush.color:=listView.SelectBackColor;
-        listView.Canvas.Brush.style:=bsSolid;
-        listView.Canvas.font.Assign(listView.selectedfont);
-       // listView.Canvas.font.Color:=clHighlightText;
-        listView.Canvas.Rectangle(0,y,listView.ClientWidth-listView.F_VScroll.Width,y+listView.RowHeight+1);
-       end else begin
-        listView.Canvas.pen.Style:=psClear;
-        listView.Canvas.brush.Style:=bsClear;
-        listView.Canvas.font.Assign(listView.font);
-      end;
-      if listView.focused = self then
-        DrawFocusRect( listView.Canvas.Handle,rect(0,y,listView.ClientWidth-listView.F_VScroll.Width,y+listView.RowHeight));
-
-      if rec.right>x-5 then begin
-        case listView.RootLineMode of
-          lmDot:  listView.DrawAlignDotLine(x-5,y,x-5,y+listView.RowHeight div 2,listView.F_RootLineColor);
-          lmSolid: with listView.canvas do begin
-                     MoveTo(x-5,y);
-                     LineTo(x-5,y+listView.RowHeight div 2);
-                   end;
-        end;
-        if (ImageTyp<>itNone) then begin
-          case ImageTyp of
-            itListIndex: if listView.Images<>nil then begin
-                           listView.Images.draw(listView.Canvas,x,y,IndexOrBitmap);
-                           listView.Canvas.brush.Style:=bsClear;
-                           listView.Canvas.TextRect(rec,x+listView.Images.Width+3,y,Caption);
-                         end;
-            itBitmap:    if (TObject(IndexOrBitmap)<>nil)and(TObject(IndexOrBitmap)is TBitmap) then begin
-                           listView.Canvas.Draw(x,y,TBitmap(IndexOrBitmap));
-                           listView.Canvas.brush.Style:=bsClear;
-                           listView.Canvas.TextRect(rec,x+TBitmap(IndexOrBitmap).Width+3,y,Caption);
-                         end;
-          end;
-        end else begin
-          listView.Canvas.brush.Style:=bsClear;
-          listView.Canvas.TextRect(rec,x+2,y,Caption);
-        end;
-      end;
-  //    selected:=listView.focused = self;
-      x2:=-listView.F_HScroll.Position;
-      for i:=0 to min(listView.F_Header.Sections.Count-2,RecordItems.Count-1) do begin
-        x2:=x2+listView.F_Header.Sections[i].Width;
-//      listView.Canvas.TextOut(x2,y,(TObject(RecordRecordItems[i]) as TTreeListRecordItem).Caption);
-        if listView.DoCustomRecordItemDrawEvent(cdevtPrePaint,self,(TObject(RecordItems[i]) as TTreeListRecordItem),x2,y,i) then
-          TTreeListRecordItem(RecordItems[i]).PaintTo(listView,x2,y,i,self);
-        if not listView.DoCustomRecordItemDrawEvent(cdevtPostPaint,self,TTreeListRecordItem(RecordItems[i]),x2,y,i) then break;
-      end;
-
-    end;
-  tempX:=listView.StartX-5;
-  if listView.RootLineMode <> lmNone then
-    for i:=0 to xColumn do begin
-      if tempx>rec.right then break;
-      if listView.LastItems[i] then
-        if listView.RootLineMode=lmDot then
-          listView.DrawAlignDotLine(tempX,y,tempX,y+listView.RowHeight-1,listView.F_RootLineColor)
-         else with listView.canvas do begin
-           pen.color:=listView.F_RootLineColor;
-           pen.Style:=psSolid;
-           MoveTo(tempX,y);
-           LineTo(tempX,y+listView.RowHeight);
-         end;
-      tempX:=tempX+15;
-    end;
-  end;
   y:=y+listView.RowHeight;
   if defaultDraw then
-    case listView.HorizontalLineMode of
-      lmSolid: with listView.canvas do begin
-                 pen.color:=listView.F_HorizontalLineColor;
-                 pen.Style:=psSolid;
-                 MoveTo(0,y-1);
-                 LineTo(ListView.ClientWidth-ListView.F_VScroll.Width,y-1);
-               end;
-      lmDot:   listView.DrawAlignDotLine(0,y-1,ListView.ClientWidth-ListView.F_VScroll.Width,y-1,listView.F_HorizontalLineColor);
-    end;
-  if (SubItems.Count>0) then begin
-    if defaultDraw then
-      if (yold>listView.F_Header.Height)and(rec.right>x-5) then begin
-        listView.Canvas.pen.Style:=psSolid;
-        listView.Canvas.pen.Color:=clBlack;
-        listView.Canvas.brush.Style:=bsSolid;
-        listView.Canvas.brush.Color:=listView.ButtonColor;
-        listView.canvas.Rectangle(x-10,yold+listView.RowHeight div 2-5,x-1,yold+listView.RowHeight div 2+4);
-        listView.canvas.moveTo(x-8,yold+listView.RowHeight div 2-1);
-        listView.canvas.LineTo(x-3,yold+listView.RowHeight div 2-1);
-        if not Expanded then begin
-          listView.canvas.moveTo(x-6,yold+listView.RowHeight div 2-3);
-          listView.canvas.LineTo(x-6,yold+listView.RowHeight div 2+2);
+    if y>listView.F_Header.Height then begin
+      //clearing
+      listView.Canvas.FillRect(rect(0,yold,listView.ClientWidth-listview.f_vscroll.width,y));
+
+      rec.top:=yold;
+      rec.Bottom:=y;
+
+      //draw text
+      for i:=0 to listView.F_Header.Sections.Count-1 do begin
+        {$IFDEF LCL}
+          recordId:=listView.F_Header.Sections[i].OriginalIndex;
+        {$ELSE}
+          recordId:=i;
+        {$ENDIF}
+        if recordId>RecordItems.Count-1 then continue;
+        rec.left:=listView.F_Header.Sections[i].Left-listView.F_HScroll.Position;
+        rec.right:=rec.left+listView.F_Header.Sections[i].Width;
+        RecordItems[recordId].selectFont(listView);
+        if listView.DoCustomRecordItemDrawEvent(cdevtPrePaint,self,RecordItems[recordId],rec.left,rec.top,recordId) then begin
+          if recordId=0 then begin
+            drawTreeColumnText;
+            drawTreeColumn;
+          end else
+            drawTextRect(RecordItems[recordId].Text,rec.Left+LEFT_TEXT_PADDING);
+          if not listView.DoCustomRecordItemDrawEvent(cdevtPostPaint,self,RecordItems[recordId],rec.left,rec.top,recordId) then
+            break;
         end;
       end;
 
-    if (Expanded)and(listView.DoCustomItemDrawEvent(cdevtPostPaint,Self,x,y,xColumn,last)) then
+      //draw focus rect
+      if listView.focused = self then
+        DrawFocusRect( listView.Canvas.Handle,rect(0,yold,listView.ClientWidth-listView.F_VScroll.Width,y));
+
+      //draw horizontal separation lines
+      case listView.HorizontalLineMode of
+        lmSolid: with listView.canvas do begin
+                   pen.color:=listView.F_HorizontalLineColor;
+                   pen.Style:=psSolid;
+                   MoveTo(0,y-1);
+                   LineTo(ListView.ClientWidth-ListView.F_VScroll.Width,y-1);
+                 end;
+        lmDot:   listView.DrawAlignDotLine(0,y-1,ListView.ClientWidth-ListView.F_VScroll.Width,y-1,listView.F_HorizontalLineColor);
+      end;
+    end;
+
+  //draw sub items
+  if (SubItems.Count>0) then
+    if (Expanded)and(listView.DoCustomItemDrawEvent(cdevtPostPaint,Self,0,y,xColumn,last)) then
       for i:=0 to SubItems.Count-1 do
-        (TObject(SubItems[i]) as TTreeListItem).PaintTo(listView,x+15,y,xColumn+1,i=SubItems.Count-1);
-  end;
+        (TObject(SubItems[i]) as TTreeListItem).PaintTo(listView,y,xColumn+1,i=SubItems.Count-1);
+
 end;
 
 //Destroy
@@ -1539,6 +1621,7 @@ begin
   F_Header.Visible:=true;
   with F_Header.Sections.Add do begin
     Caption:='';
+    Width:=1000;
   end;
   F_Header.Left:=0;
   F_Header.Width:=10000;
@@ -1551,7 +1634,9 @@ begin
   F_Header.OnSectionTrack:=_HeaderSectionTrack;
   F_Header.OnSectionResize:=_HeaderSectionResize;
   F_Header.OnSectionClick:=_HeaderSectionClick;
-  F_Header.OnSectionSeparatorDblClick:=_HeaderSectionDblClick();
+  {$ifdef lcl}F_Header.OnSectionSeparatorDblClick:=_HeaderSectionDblClick();{$endif}
+  F_Header.OnSectionEndDrag:=_HeaderSectionEndDrag;
+  
 
   //Scrollbar initialisieren
   F_VScroll:=TScrollbar.create(self);
@@ -1570,6 +1655,7 @@ begin
   F_HScroll.Visible:=true;
   F_HScroll.Kind:=sbHorizontal;
   F_HScroll.Left:=0;
+  F_HScroll.SmallChange:=5;
   F_HScroll.OnChange:=_HScrollChange;
 
   RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
@@ -1610,6 +1696,16 @@ begin
   if F_Sorted=AValue then exit;
   F_Sorted:=AValue;
   if F_Sorted then sort;
+end;
+
+function TW32TreeListView.GetColumnsDragable: boolean;
+begin
+  Result:=F_Header.DragReorder;
+end;
+
+procedure TW32TreeListView.SetColumnsDragable(const AValue: boolean);
+begin
+  F_Header.DragReorder:=AValue;
 end;
 
 function TW32TreeListView.DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
@@ -1687,13 +1783,27 @@ begin
   result:=HeaderItemDistance+F_Header.Height-F_VScroll.Position*RowHeight;
 end;
 
-procedure TW32TreeListView.SetHeaderSections(const value:THeaderSections);
+procedure TW32TreeListView.SetColumns(const value:THeaderSections);
 begin
   F_Header.Sections.Assign(value);
 end;
-function TW32TreeListView.GetHeaderSections:THeaderSections;
+function TW32TreeListView.GetColumns:THeaderSections;
 begin
   Result:=F_Header.Sections;
+end;
+
+function TW32TreeListView.GetColumnFromOriginalIndex(i: longint
+  ): THeaderSection;
+var j:longint;
+begin
+  {$IFDEF LCL}
+    for j:=0 to F_Header.Sections.count-1 do
+      if F_Header.Sections[j].OriginalIndex=i then
+        exit(F_Header.Sections[j]);
+    result:=nil;
+  {$ELSE}
+    result:=F_Header.Sections[i];
+  {$ENDIF}
 end;
 
 function TW32TreeListView.GetItemAtPos(const y:integer):TTreeListItem;
@@ -1756,8 +1866,8 @@ end;
 
 function TW32TreeListView.VisibleRowCount:longint;
 begin
-  if RowHeight=0 then exit(0);
-  result:=RealClientHeight div RowHeight;
+  if RowHeight=0 then result:=0
+  else  result:=RealClientHeight div RowHeight;
 end;
 
 procedure TW32TreeListView.sort;
@@ -1794,7 +1904,7 @@ end;
 function TW32TreeListView.RealClientHeight: longint;
 begin
   result:=ClientHeight-RealControlHeight(F_Header)-HeaderItemDistance;
-  if F_HScroll.Visible then result-=RealControlHeight(F_HScroll);
+  if F_HScroll.Visible then result:=result-RealControlHeight(F_HScroll);
 end;
 
 procedure TW32TreeListView.DrawAlignDotLine(x,y:integer;const x2,y2:integer;const color:TColor);
@@ -1867,11 +1977,29 @@ begin
 end;
 
 procedure TW32TreeListView._HeaderSectionClick(HeaderControl: TEventHeaderControl; Section: THeaderSection);
+var NewSortColumn,i:Longint;
+    cursor: TPoint;
 begin
   if not F_Sorted then exit;
-  if F_SortColumn=Section.Index-1 then F_SortColumnInverted:=not F_SortColumnInverted
+  if Section=nil then begin
+    GetCursorPos(cursor);
+    cursor:=HeaderControl.ScreenToClient(cursor);
+    for i := 0 to HeaderControl.Sections.Count - 1 do
+      if (HeaderControl.Sections[i].Left<cursor.x)and
+        (HeaderControl.Sections[i].right>cursor.x) then begin
+          section:=HeaderControl.Sections[i];
+          break;
+        end;
+    if Section=nil  then exit;
+  end;
+  {$IFDEF LCL}
+  NewSortColumn:=Section.OriginalIndex;
+  {$ELSE}
+  NewSortColumn:=Section.Index;
+  {$ENDIF}
+  if F_SortColumn=NewSortColumn then F_SortColumnInverted:=not F_SortColumnInverted
   else begin
-    F_SortColumn:=section.Index-1;
+    F_SortColumn:=NewSortColumn;
     F_SortColumnInverted:=false;
   end;
   sort;
@@ -1883,11 +2011,16 @@ var i,w,maxw:longint;
 begin
   maxw:=0;
   for i:=0 to items.count-1 do begin
-    w:=Items[i].GetMaxColumnWidth(section.index-1);
+    w:=Items[i].GetMaxColumnWidth(section.index);
     if w>maxw then maxw:=w;
   end;
   if maxw+5>section.Width then section.width:=maxw+5
   else if Section.width+10>maxw+5 then section.width:=maxw+5;
+end;
+
+procedure TW32TreeListView._HeaderSectionEndDrag(Sender: TObject);
+begin
+  _GeneralEvent(Sender);
 end;
 
 procedure TW32TreeListView._HScrollChange(Sender: TObject);
@@ -1956,12 +2089,13 @@ begin
      (RedrawBlock>0) then exit;
   i:=Items.GetRealItemCount([])-VisibleRowCount; //Anzahl der nicht anzeigbaren Items
   if i-1>F_VScroll.Min then begin
-    F_VScroll.Enabled:=false;
+    //F_VScroll.Enabled:=false;
     F_VScroll.Enabled:=true;
     F_VScroll.Max:=i-1;
     F_VScroll.PageSize:=VisibleRowCount;
+    F_VScroll.LargeChange:=VisibleRowCount;
   end else begin
-    F_VScroll.Enabled:=true;
+    //F_VScroll.Enabled:=true;
     F_VScroll.Enabled:=false;
   end;
   //F_VScroll.PageSize:=(ClientHeight-F_HScroll.Height*3-F_Header.Height) div (F_VScroll.Max - F_VScroll.Min + 1);
@@ -1971,10 +2105,13 @@ begin
     j:=j+F_Header.Sections[i].Width;
   end;
   i:=j-width+F_VScroll.Width;
-  if i>0 then F_HScroll.max:=i
-  else begin
-    F_HScroll.max:=0;
+  if i>0 then begin
     F_HScroll.Enabled:=true;
+    F_HScroll.max:=i;
+    F_HScroll.PageSize:=F_HScroll.width;
+    F_HScroll.LargeChange:=F_HScroll.width;
+  end else begin
+    //F_HScroll.Enabled:=true;
     F_HScroll.Enabled:=false;
   end;
 end;
@@ -1991,12 +2128,13 @@ procedure TW32TreeListView.WndProc(var message:TMessage);
 var tempRecordItem:TTreeListRecordItem;
     itemAtPos,nextToFocus: TTreeListItem;
     shiftState: TShiftState;
+    cursorPos: tpoint;
 begin
   nextToFocus:=nil;
   case message.Msg of
     WM_GETDLGCODE:  message.Result:=DLGC_WANTARROWS or DLGC_WANTCHARS;
     WM_MOUSEWHEEL: if F_VScroll.Visible and F_VScroll.Enabled then begin
-      F_MouseWheelDelta+=TWMMouseWheel(message).WheelDelta;
+      F_MouseWheelDelta:=F_MouseWheelDelta+TWMMouseWheel(message).WheelDelta;
       if (F_MouseWheelDelta<=-120) or (F_MouseWheelDelta>=120) then begin
         F_VScroll.Position:=F_VScroll.Position-F_MouseWheelDelta div 120;
         F_MouseWheelDelta:=0;
@@ -2026,8 +2164,8 @@ begin
       tempRecordItem:=GetRecordItemAtPos(TWMMouseMove(message).XPos,TWMMouseMove(message).YPos);
       if tempRecordItem<>nil then begin
         if ToolTips then
-          if (F_Header.SectionFromOriginalIndex[tempRecordItem.F_Index+1]<>nil) and
-            (tempRecordItem.GetNecessaryWidth(self)+10>F_Header.SectionFromOriginalIndex[tempRecordItem.F_Index+1].Width) then begin
+          if (GetColumnFromOriginalIndex(tempRecordItem.F_Index)<>nil) and
+            (tempRecordItem.GetNecessaryWidth(self)+10>GetColumnFromOriginalIndex(tempRecordItem.F_Index).Width) then begin
             hint:=tempRecordItem.Text;
             ShowHint:=true;
           end else ShowHint:=false;
@@ -2045,8 +2183,9 @@ begin
       F_RealClickPos:=point(TWMLBUTTONDOWN(message).XPos+F_HScroll.Position,TWMLBUTTONDOWN(message).YPos+F_VScroll.Position);
       SetFocus;
       itemAtPos:=GetItemAtPos(TWMLBUTTONDOWN(message).YPos);
-      if (itemAtPos<>nil) and (TWMLBUTTONDOWN(message).XPos<itemAtPos.F_Indent*15-1+StartX)
-         and (TWMLBUTTONDOWN(message).XPos>itemAtPos.F_Indent*15-10+StartX) then begin
+      if (itemAtPos<>nil) and
+         (TWMLBUTTONDOWN(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
+         (TWMLBUTTONDOWN(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
         itemAtPos.Expanded:=not itemAtPos.Expanded;
         if itemAtPos=focused then paint;
       end;
@@ -2148,13 +2287,16 @@ begin
                       paint;
                     end;
     WM_ERASEBKGND: message.Result:=1;
-    WM_RBUTTONUP:
-      if assigned(PopupMenu) then PopupMenu.PopUp()
+    WM_RBUTTONUP: begin
+      GetCursorPos(cursorPos);
+      if assigned(PopupMenu) then PopupMenu.PopUp(cursorPos.x,cursorPos.Y)
       else inherited;
+    end;
     WM_KEYUP:
-      if (TWMKeyUp(message).CharCode = VK_APPS) and assigned(PopupMenu) then
-        PopupMenu.PopUp()
-       else inherited;
+      if (TWMKeyUp(message).CharCode = VK_APPS) and assigned(PopupMenu) then begin
+        GetCursorPos(cursorPos);
+        PopupMenu.PopUp(cursorPos.X,cursorPos.y)
+      end else inherited;
     else inherited;
   end;
   if nextToFocus<>nil then begin //select or focus
@@ -2204,6 +2346,15 @@ begin
 //  windows.Beep(1000,100);
   //F_VScroll.Repaint;
   //F_HScroll.Repaint;
+  {$IFDEF LCL}
+    for i:=0 to F_Header.Sections.Count-1 do
+      if F_Header.Sections[i].OriginalIndex=0 then begin
+        F_TreeSectionPos:=rect(F_Header.Sections[i].Left-F_HScroll.Position,0,F_Header.Sections[i].Right-F_HScroll.Position,0);
+        break;
+      end;
+  {$ELSE}
+    F_TreeSectionPos:=rect(F_Header.Sections[0].Left-F_HScroll.Position,0,F_Header.Sections[0].Right-F_HScroll.Position,0);
+  {$ENDIF}
   PaintEvenItem:=true;
   canvas.Lock;
   try
@@ -2235,11 +2386,11 @@ begin
         end;
         //Items
         ypos:=TopPos;
-        if RootLineMode <> lmNone then xpos:=13-F_HScroll.Position
-        else xpos:=3-F_HScroll.Position;
-        StartX:=xpos;
+        if RootLineMode <> lmNone then StartX:=13
+        else StartX:=3;
+        xpos:=startx-F_HScroll.Position;
         for i:=0 to Items.count-1 do begin
-          (TObject(Items[i]) as TTreeListItem).PaintTo(self,xpos,ypos,0,i = Items.count-1);
+          (TObject(Items[i]) as TTreeListItem).PaintTo(self,ypos,0,i = Items.count-1);
   //        if i=Items.count-2 then
 //           DrawAlignDotLine(xpos-5,max(TopPos,f_header.height),xpos-5,ypos+RowHeight div 2,clBlack);
         end;
