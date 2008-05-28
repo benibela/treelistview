@@ -195,6 +195,7 @@ type
       constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview);overload;
       constructor create(const parent:TTreeListItem;const TreeListView:Tw32treelistview;const ACaption:string);overload;
 
+      function getBounds(column: longint):TRect; //-1 => whole line
       function GetItemAtPos(const listView:TW32TreeListView;const TestY:integer;var startY:integer):TTreeListItem;
       function GetItemAtPosWithIndentSet(const listView:TW32TreeListView;const TestY,Indent:integer;var startY:integer):TTreeListItem;
       function GetRecordItemAtPos(const listView:TW32TreeListView;const TestX:integer):TTreeListRecordItem;
@@ -248,6 +249,8 @@ type
   TCustomRecordItemDrawEvent=procedure (sender:TObject;eventTyp_cdet:TCustomDrawEventTyp;parentItem:TTreeListItem;RecordItem:TTreeListRecordItem;xpos,ypos,xColumn:integer;var defaultDraw:Boolean) of object;
   TItemEvent=procedure (sender:TObject;item:TTreeListItem) of object;
   TRecordItemEvent=procedure (sender:TObject;parentItem:TTreeListItem;item:TTreeListRecordItem) of object;
+  TCompareTreeListItemsEvent=procedure (sender: TObject; item1, item2: TTreeListItem; var result: longint)of object;
+  TUserSortItemsEvent=procedure (sender: TObject; var sortColumn: longint; var invertSorting: boolean) of object;
 
   { TW32TreeListView }
   {$ifndef fpc}
@@ -268,6 +271,8 @@ type
     F_Sorted: boolean;
     F_SortColumn: longint;
     F_SortColumnInverted: boolean;
+    F_OnCompareItems: TCompareTreeListItemsEvent;
+    F_OnUserSortItems: TUserSortItemsEvent;
 
     F_Items:TTreeListItems;
     F_Header:THeaderControl;
@@ -408,6 +413,7 @@ type
     property multiSelect: boolean read F_MultiSelect write SetMultiSelect;
     property focused:TTreeListItem read F_Focused write SetFocused;
     property Selected:TTreeListItem read F_Focused write SetSelected;
+    property SortColumn: longint read F_SortColumn;
 
     procedure UpdateScrollSize;
 
@@ -427,6 +433,7 @@ type
     procedure EndUpdate;
     function VisibleRowCount:longint;
     procedure sort;
+    procedure ensureVisibility(item: TTreeListItem);
 
     //Messages
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -443,8 +450,12 @@ type
   published
     { Published-Deklarationen }
     {-------------------------------START Ereignisse---------------------------}
-    property Sorted: boolean read F_Sorted write SetSorted;
     property ColumnsDragable: boolean read GetColumnsDragable write SetColumnsDragable;
+    
+    //Sortierungsereignisse
+    property Sorted: boolean read F_Sorted write SetSorted;
+    property OnCompareItems: TCompareTreeListItemsEvent read F_OnCompareItems write F_OnCompareItems;
+    property OnUserSortItemsEvent: TUserSortItemsEvent read F_OnUserSortItems write F_OnUserSortItems;
 
     //Scrollbarereignisse
     property OnVScrollBarChange:TNotifyEvent read F_VScrollBarChange write F_VScrollBarChange;
@@ -1093,6 +1104,20 @@ begin
   Expanded:=true;
 end;
 
+function TTreeListItem.getBounds(column: longint): TRect;
+begin
+  result.Top:=(F_TreeListView.Items.RealIndexOf(self,[]))*F_TreeListView.RowHeight+F_TreeListView.TopPos;
+  result.bottom:=Result.top+F_TreeListView.RowHeight;
+  if column=-1 then begin
+    result.Left:=0;
+    Result.right:=F_TreeListView.Width;
+  end else begin
+    Result.left:=F_TreeListView.F_Header.Sections[column].Left;
+    Result.right:=result.left+F_TreeListView.F_Header.Sections[column].Width;
+    Result.Left:=Result.Left+LEFT_TEXT_PADDING;
+  end;
+end;
+
 function TTreeListItem.GetRecordItemsText(i: Integer): string;
 begin
   if i<RecordItems.Count then result:=RecordItems[i].Text
@@ -1662,16 +1687,13 @@ begin
 end;
 
 procedure TW32TreeListView.SetFocused(const AValue: TTreeListItem);
-var rindex:longint;
 begin
   if AValue=F_Focused then exit;
   F_Focused:=AValue;
   DoSelect(F_Focused);
-  if focused<>nil then begin
-    rindex:=Items.RealIndexOf(focused,[]);
-    if rindex<F_VScroll.Position then F_VScroll.Position:=rindex
-    else if rindex>F_VScroll.Position+VisibleRowCount-1 then F_VScroll.Position:=rindex-VisibleRowCount+1;
-  end;
+  if focused<>nil then
+    ensureVisibility(focused);
+
   paint;
   {*RowHeight+TopPos+F_Header.Height;
   if temp-rowHeight<F_Header.Height then
@@ -1876,6 +1898,21 @@ begin
   Paint;
 end;
 
+procedure TW32TreeListView.ensureVisibility(item: TTreeListItem);
+var rindex:longint;
+    temp: TTreeListItem;
+begin
+  temp:=item.Parent;
+  while temp<>nil do begin
+    if not temp.Expanded then temp.Expand;
+    temp:=temp.Parent;
+  end;
+  rindex:=Items.RealIndexOf(item,[]);
+  if rindex<F_VScroll.Position then F_VScroll.Position:=rindex
+  else if rindex>F_VScroll.Position+VisibleRowCount-1 then F_VScroll.Position:=rindex-VisibleRowCount+1;
+
+end;
+
 procedure TW32TreeListView.setImageList(const images:TImageList);
 begin
   F_ImageList:=images;
@@ -1933,13 +1970,17 @@ function TW32TreeListView.CompareItems(i1, i2: TTreeListItem): longint;
 var t1,t2:string;
     v1, v2: longint;
 begin
-  t1:=i1.RecordItemsText[F_SortColumn];
-  t2:=i2.RecordItemsText[F_SortColumn];
-  if TryStrToInt(t1,v1) and TryStrToInt(t2,v2) then begin
-    if v1<v2 then result:=-1
-    else if v1>v2 then result:=1
-    else result:=0;
-  end else result:=CompareText(t1,t2);
+  if assigned(F_OnCompareItems) then
+    F_OnCompareItems(self,i1,i2,result)
+   else begin
+    t1:=i1.RecordItemsText[F_SortColumn];
+    t2:=i2.RecordItemsText[F_SortColumn];
+    if TryStrToInt(t1,v1) and TryStrToInt(t2,v2) then begin
+      if v1<v2 then result:=-1
+      else if v1>v2 then result:=1
+      else result:=0;
+    end else result:=CompareText(t1,t2);
+  end;
   if F_SortColumnInverted then result:=-result;
 end;
 
@@ -2002,6 +2043,7 @@ begin
     F_SortColumn:=NewSortColumn;
     F_SortColumnInverted:=false;
   end;
+  if assigned(F_OnUserSortItems) then F_OnUserSortItems(self,F_SortColumn,F_SortColumnInverted);
   sort;
 end;
 
