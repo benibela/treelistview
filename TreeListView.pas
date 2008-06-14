@@ -372,6 +372,7 @@ type
     procedure SetTopPos(const i:integer);
     function GetTopPos:integer;
 
+    procedure SetSortColumn(const AValue: longint);
     procedure SetSorted(const AValue: boolean);
 
     procedure SetColumns(const value:THeaderSections);
@@ -413,7 +414,7 @@ type
     property multiSelect: boolean read F_MultiSelect write SetMultiSelect;
     property focused:TTreeListItem read F_Focused write SetFocused;
     property Selected:TTreeListItem read F_Focused write SetSelected;
-    property SortColumn: longint read F_SortColumn;
+    property SortColumn: longint read F_SortColumn write SetSortColumn;
 
     procedure UpdateScrollSize;
 
@@ -1711,6 +1712,14 @@ begin
     AValue.Selected:=true;
   SetFocused(AValue);
   EndMultipleUpdate;
+end;
+
+procedure TW32TreeListView.SetSortColumn(const AValue: longint);
+begin
+  if SortColumn=AValue then exit;
+  F_SortColumn:=AValue;
+  F_SortColumnInverted:=false;
+  if F_Sorted then sort;
 end;
 
 procedure TW32TreeListView.SetSorted(const AValue: boolean);
