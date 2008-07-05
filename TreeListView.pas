@@ -37,7 +37,7 @@ unit TreeListView;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,math
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math
   {$ifdef clr},types{$endif};
 
 type
@@ -276,6 +276,7 @@ type
 
     F_Items:TTreeListItems;
     F_Header:THeaderControl;
+    F_HeaderColumnPopupMenu: TPopupMenu;
     F_VScroll:TScrollBar;
     F_HScroll:TScrollBar;
     F_RowHeight:integer;
@@ -401,6 +402,7 @@ type
     procedure _HeaderSectionClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionDblClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionEndDrag(Sender: TObject);
+    procedure ColumnPopupMenuClick(Sender: TObject);
     procedure _HScrollChange(Sender: TObject);
     procedure _VScrollChange(Sender: TObject);
 
@@ -436,6 +438,19 @@ type
     procedure sort;
     procedure ensureVisibility(item: TTreeListItem);
 
+    //Header
+    function ColumnFromOriginalIndex(index: longint):  THeaderSection;
+    procedure createUserColumnVisibilityPopupMenu();
+      //these methodes allow to save only certain properties in contrast to
+      //a normal twriter;  order and visible reading requires FPC
+    function serializeColumnWidths: string;
+    function serializeColumnOrder: string;
+    function serializeColumnVisibility: string;
+    procedure deserializeColumnWidths(s: string);
+    procedure deserializeColumnOrder(s: string);
+    procedure deserializeColumnVisibility(s: string);
+
+
     //Messages
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure WndProc(var message:TMessage);override;
@@ -447,7 +462,7 @@ type
     destructor destroy;override;
 
     property TopPos:integer read GetTopPos write SetTopPos;
-    property Canvas;
+
   published
     { Published-Deklarationen }
     {-------------------------------START Ereignisse---------------------------}
@@ -1263,7 +1278,7 @@ end;
 function TTreeListItem.GetMaxColumnWidth(const id: longint): longint;
 var i,temp:longint;
 begin
-  if id=0 then result:=RecordItems[0].GetNecessaryWidth()+15*F_Indent+13
+  if id=0 then result:=RecordItems[0].GetNecessaryWidth()+LINE_DISTANCE*F_Indent+13+LEFT_TEXT_PADDING
   else result:=RecordItems[id].GetNecessaryWidth();
   for i:=0 to SubItems.Count-1 do begin
     temp:=SubItems[i].GetMaxColumnWidth(id);
@@ -1567,6 +1582,7 @@ end;
 destructor TTreeListItem.destroy;
 begin
   if self=TreeListView.focused then TreeListView.focused:=nil;
+  if Selected then TreeListView.f_selCount-=1;
   F_RecordItems.free;
   F_SubItems.free;
   inherited;
@@ -1690,6 +1706,7 @@ end;
 procedure TW32TreeListView.SetFocused(const AValue: TTreeListItem);
 begin
   if AValue=F_Focused then exit;
+  if tlioDeleting in InternOptions_tlio then exit;
   F_Focused:=AValue;
   DoSelect(F_Focused);
   if focused<>nil then
@@ -1737,6 +1754,17 @@ end;
 procedure TW32TreeListView.SetColumnsDragable(const AValue: boolean);
 begin
   F_Header.DragReorder:=AValue;
+end;
+
+procedure TW32TreeListView.ColumnPopupMenuClick(Sender: TObject);
+var mi: TMenuItem;
+begin
+  if not (sender is tmenuitem) then exit;
+  mi:=TMenuItem(sender);
+  if (mi.tag<0) or (mi.tag>=Columns.Count) then exit;
+  mi.Checked:=not mi.Checked;
+  Columns[mi.Tag].visible:=mi.Checked;
+  Paint;
 end;
 
 function TW32TreeListView.DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
@@ -1920,6 +1948,124 @@ begin
   if rindex<F_VScroll.Position then F_VScroll.Position:=rindex
   else if rindex>F_VScroll.Position+VisibleRowCount-1 then F_VScroll.Position:=rindex-VisibleRowCount+1;
 
+end;
+
+function TW32TreeListView.ColumnFromOriginalIndex(index: longint): THeaderSection;
+var i:longint;
+begin
+  result:=nil;
+  {$Ifdef FPC}
+    for i:=0 to F_Header.Sections.count-1 do
+      if F_Header.Sections[i].OriginalIndex = index then
+        exit(F_Header.Sections[i]);
+  {$ELSE}
+    if index <Columns.count-1 then
+      result:=Columns[index];
+  {$ENDIF}
+end;
+
+procedure TW32TreeListView.createUserColumnVisibilityPopupMenu();
+var mi: TMenuItem;
+    i:longint;
+begin
+  if F_HeaderColumnPopupMenu=nil then
+    F_HeaderColumnPopupMenu:=TPopupMenu.Create(self);
+  if F_Header.PopupMenu<>F_HeaderColumnPopupMenu then F_Header.PopupMenu:=F_HeaderColumnPopupMenu;
+  F_HeaderColumnPopupMenu.Items.Clear;
+  for i:=0 to Columns.count-1 do begin
+    mi:=TMenuItem.Create(F_HeaderColumnPopupMenu);
+    mi.OnClick:=ColumnPopupMenuClick;
+    mi.Caption:=Columns[i].Text;
+    mi.Checked:=Columns[i].visible;
+    mi.tag:=i;
+    F_HeaderColumnPopupMenu.Items.Add(mi);
+  end;
+end;
+
+function TW32TreeListView.serializeColumnWidths: string;
+var i:longint;
+    vis:boolean;
+    sec:THeaderSection;
+begin
+  Result:='';
+  for i:=0 to F_Header.Sections.Count-1 do begin
+    sec:=ColumnFromOriginalIndex(i);
+    {$ifdef fpc}
+      vis:=sec.Visible;
+      if not vis then
+        sec.Visible :=true;
+    {$endif}
+    result:=result+IntToStr(sec.Width)+',';
+    {$ifdef fpc}
+      if not vis then sec.Visible :=false;
+    {$endif}
+  end;
+end;
+
+function TW32TreeListView.serializeColumnOrder: string;
+var i:longint;
+begin
+  result:='';
+  for i:=0 to F_Header.Sections.Count-1 do
+    result+= IntToStr(ColumnFromOriginalIndex(i).Index)+',';
+end;
+
+function TW32TreeListView.serializeColumnVisibility: string;
+var i:longint;
+begin
+  result:='';
+  for i:=0 to F_Header.Sections.count-1 do
+    {$ifdef fpc}
+    if not ColumnFromOriginalIndex(i).Visible then
+      result+='-'
+     else
+     {$endif}result:=result+'+';
+end;
+
+procedure TW32TreeListView.deserializeColumnWidths(s: string);
+var i:longint;
+    sep: longint;
+begin
+  i:=0;
+  while i<F_Header.Sections.Count do begin
+    sep:=pos(',',s);
+    if (sep=0) then break;
+    ColumnFromOriginalIndex(i).Width:=StrToInt(trim(copy(s,1,sep-1)));
+    delete(s,1,sep);
+    inc(i);
+  end;
+end;
+
+procedure TW32TreeListView.deserializeColumnOrder(s: string);
+var i:longint;
+    sep: longint;
+    tempOrder: array[0..20] of longint;
+begin
+{$ifdef fpc}
+  //setting random index can changes other ones, therefore they will be set ascending
+  //setlength(tempOrder,F_Header.Sections.Count);
+  for i:=0 to high(tempOrder) do
+    tempOrder[i]:=i;
+  i:=0;
+  while i<F_Header.Sections.Count do begin
+    sep:=pos(',',s);
+    if (sep=0) then break;
+    tempOrder[i]:=StrToInt(trim(copy(s,1,sep-1)));
+    delete(s,1,sep);
+    inc(i);
+  end;
+  for i:=0 to F_Header.Sections.count-1 do
+    ColumnFromOriginalIndex(tempOrder[i]).Index:=i;
+{$endif}
+end;
+
+procedure TW32TreeListView.deserializeColumnVisibility(s: string);
+var i:longint;
+begin
+{$ifdef fpc}
+  for i:=0 to min(length(s)-1,F_Header.Sections.Count-1) do
+    ColumnFromOriginalIndex(i).Visible:=s[i+1]='+';
+{$endif}
 end;
 
 procedure TW32TreeListView.setImageList(const images:TImageList);
@@ -2358,6 +2504,7 @@ begin
     else if ssShift in shiftState then begin
       F_Focused:=nextToFocus;
       SelectRange(F_BaseSelect,nextToFocus);
+      ensureVisibility(nextToFocus);
     end;
   end;
     
@@ -2409,23 +2556,25 @@ begin
   PaintEvenItem:=true;
   canvas.Lock;
   try
-    doubleBuffer:=TBitmap.create;
+    {$ifndef fpc_wtf}doubleBuffer:=TBitmap.create;
     doubleBuffer.Width:=Width;
     doubleBuffer.Height:=Height;
     doubleBuffer.Canvas.Lock;
-    oldHandle:=Canvas.Handle;
+    oldHandle:=Canvas.Handle;{$endif}
     try
       with Canvas do begin
         //Background
         defaultDraw:=DoCustomBackgroundDrawEvent(cdevtPrePaint);
         if defaultDraw then begin
           pen.Style:=psClear;
-          brush.Color:=clBtnFace;
           brush.Style:=bsSolid;
+          brush.Color:=clBtnFace;
           Rectangle(ClientWidth-F_VScroll.Width,ClientHeight-F_HScroll.Height,ClientWidth+1,ClientHeight+1);
 
+          {$ifndef fpc_wtf}
           Handle:=doubleBuffer.Canvas.Handle; //Canvas verbiegen, mit z.B.: Canvas.LineTo wird nun in den Buffer gezeichnet
-
+          {$endif}
+          
           pen.Style:=psClear;
           brush.Style:=bsSolid;
           brush.color:=F_BgColor;
@@ -2469,8 +2618,8 @@ begin
         CopyRect(rect(0,F_Header.Height,ClientWidth-F_VScroll.Width,ClientHeight-F_HScroll.Height),doubleBuffer.canvas,rect(0,F_Header.Height,ClientWidth-F_VScroll.Width,ClientHeight-F_HScroll.Height)); //DoubleBuffer ausgeben
       end;
     finally
-      canvas.Handle:=oldHandle;
-      doubleBuffer.Canvas.Unlock;
+      {$ifndef fpc_wtf}canvas.Handle:=oldHandle;
+      doubleBuffer.Canvas.Unlock;{$endif}
       doubleBuffer.free;
     end;
   finally
@@ -2488,6 +2637,7 @@ begin
 
   F_HScroll.free;
   F_VScroll.free;
+  if F_HeaderColumnPopupMenu<>nil then F_HeaderColumnPopupMenu.free;
   F_Header.free;
   F_Items.free;
   inherited;
