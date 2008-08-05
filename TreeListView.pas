@@ -205,6 +205,7 @@ type
       procedure Expand;
       procedure Collapse;
 
+
       function GetNextItemIgnoringChildren:TTreeListItem;
       //function GetNextItem:TTreeListItem; deprecated use nextvisibleitem
       //function GetPrevItem:TTreeListItem;
@@ -219,7 +220,8 @@ type
 
       property Parent:TTreeListItem read F_parent;
       property TreeListView:Tw32TreeListView read F_TreeListview;
-
+      function ParentItems: TTreeListItems;
+      
       procedure PaintTo(const listView:TW32TreeListView;var y:integer;const xColumn:integer;const last:boolean);
 
       //Destroy
@@ -1412,6 +1414,12 @@ begin
   if result=nil then result:=self;
 end;
 
+function TTreeListItem.ParentItems: TTreeListItems;
+begin
+  if Parent = nil then result:=TreeListView.Items
+  else result:=Parent.SubItems;
+end;
+
 procedure TTreeListItem.PaintTo(const listView:TW32TreeListView;var y:integer;const xColumn:integer;const last:boolean);
 var i,yold,realPos,recordId:integer;
     defaultDraw:boolean;
@@ -1802,7 +1810,7 @@ begin
   BeginMultipleUpdate;
   for i:=0 to list.count-1 do begin
     list[i].Selected:=false;
-    removeSelection(list[i].SubItems);
+    if list[i].SubItems.count>0 then removeSelection(list[i].SubItems);
   end;
   EndMultipleUpdate;
 end;
@@ -2271,10 +2279,27 @@ begin
 end;
 
 procedure TW32TreeListView.selectRange(a, b: TTreeListItem;mouseSelect:boolean=false);
+var meetA, meetB: boolean;
+  procedure setSelection(list: TTreeListItems);
+  var i:longint;
+  begin
+    for i:=0 to list.count-1 do begin
+      if meetB then begin
+        if mouseSelect then list[i].F_MouseSelected:=false
+        else list[i].Selected:=false
+      end else if meetA or (list[i]=a) then begin
+        meetA:=true;
+        if mouseSelect then list[i].F_MouseSelected:=true
+        else list[i].Selected:=true;
+        if list[i]=b then meetB:=true;
+      end;
+      setSelection(list[i].SubItems);
+    end;
+  end;
+
 var temp: TTreeListItem;
 begin
   if items.count=0 then exit;
-  BeginMultipleUpdate;
   if a=nil then a:=items[0];
   if b=nil then b:=items[items.count-1];
   if items.RealIndexOf(a,[ricCountCollapsedsubItems])>items.RealIndexOf(b,[ricCountCollapsedsubItems]) then begin
@@ -2282,19 +2307,14 @@ begin
     a:=b;
     b:=temp;
   end;
-  if not mouseSelect then removeSelection(Items)
-  else removeMouseSelection(Items);
-  temp:=a;
-  if mouseSelect then a.F_MouseSelected:=true
-  else a.Selected:=true;
-  while (temp<>b) do begin
-    a:=temp;
-    temp:=temp.GetNextItem();
-    if temp=a then break;
-    if mouseSelect then temp.F_MouseSelected:=true
-    else temp.Selected:=true;
+  BeginMultipleUpdate;
+  meetA:=false;
+  meetB:=false;
+  try
+    setSelection(Items);
+  finally
+    EndMultipleUpdate;
   end;
-  EndMultipleUpdate;
 end;
 
 procedure TW32TreeListView.UpdateScrollSize;
