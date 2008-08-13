@@ -1,13 +1,14 @@
 program treelistviewexample;
-
-uses
-  Forms,
-  treelistviewexampleu in 'treelistviewexampleu.pas' {Form1};
-
-{$R *.res}
-
-begin
+uses  forms,
+  treelistviewexampleu in 'treelistviewexampleu.pas';
+ begin
   Application.Initialize;
-  Application.CreateForm(TForm1, Form1);
-  Application.Run;
+  Application.CreateForm(texampleform, form);
+  
+  //this is a very stupid/clever workaround but at least it works
+  while running do Application.ProcessMessages;
+
 end.
+
+
+
