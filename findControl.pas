@@ -1,3 +1,11 @@
+(***
+  This unit contains the class TSearchBar which implements a Mozilla like
+  search bar.
+
+  $Revision$
+  @lastmod $Date$
+  @author Benito van der Zander (http://www.benibela.de)
+*)
 unit findControl;
 
 {$ifdef fpc}
@@ -13,14 +21,33 @@ uses
 
 type
 TFindState = set of (fsFound, fsLoopAround);
-TSearchBarSubControl = (fscCloseButton, fscCaption, fscSelectLocation, fscSearchForward, fscSearchBackwards, fscHighlight, fscStatus);
+
+
+TSearchBarSubControl = (fscCloseButton, //**< This is a close button at the left side
+                        fscCaption, //**< This is a label next to the close button and before the search edit
+                        fscSelectLocation, //**< This is a combobox next to the search edit
+                        fscSearchForward, //**< This is a forward search button next to the location combobox
+                        fscSearchBackwards, //**< This is a backward search button next to the forward one
+                        fscHighlight, //**< This is a highlight all button (which changes its down state)
+                        fscStatus); //**< This is a label showing the search result state
 TSearchBarSubControls = set of TSearchBarSubControl;
+//**This event is called when something should be searched
+//**@param incremental This is true when the new search continues an old one, e.g. it is called during typing for every pressed key
+//**@param backwards This is true when the search should be occur backwards, e.g. the user press shift+enter or the backward search button
 TSearchEvent = procedure (sender: TObject;  incremental,backwards: boolean) of object;
 
 { TFindControl }
                                                    //todo: highlight shortcut, dblclick, doku, delphi
 { TSearchBar }
 
+{** @abstract This class implements a Mozilla like search bar
+  You can use it this way:
+  @longCode(#
+    SearchBar:=TSearchBar.create(self);  //replace self with the control which should contain the search bar
+    SearchBar.Parent:=self;              //the search bar is automatically placeted at the bottom (align)
+    SearchBar.OnSearch:=SearchBarSearch; //this must be an event handler which is than called whenever something should be searched
+  #)
+}
 TSearchBar = class (TPanel)
 private
   FFindState: TFindState;
@@ -69,28 +96,28 @@ protected
   procedure DoSearch(incremental, backwards: boolean);
   {$ifdef lcl}procedure ResizeDelayedAutoSizeChildren; override;{$endif}
 public
-  property SearchText: string read GetSearchText;
-  property SearchLocation: longint read GetSearchLocation write SetSearchLocation ;
-  property SearchLocations: TStrings read GetSearchLocations;
-  property Highlighting: boolean read GetHighlighting ;
-  property FindState: TFindState read FFindState write SetFindState;
-  procedure setFocus;override;
+  property SearchText: string read GetSearchText; //**<This is the text to search, entered by the user
+  property SearchLocation: longint read GetSearchLocation write SetSearchLocation;  //**< Currently selected combobox item
+  property SearchLocations: TStrings read GetSearchLocations; //**<ComboBox-items
+  property Highlighting: boolean read GetHighlighting; //**<State of the highlight all button
+  property FindState: TFindState read FFindState write SetFindState; //**< Set this to the result of the search operation
+  procedure setFocus;override;//**< focuses the search text edit
   constructor create(TheOwner: TComponent);override;
 published
-  property OnSearch: TSearchEvent read FOnSearch write FOnSearch;
-  property OnClose: TNotifyEvent read FOnClose write FOnClose;
-  property OnHighlightChanged: TNotifyEvent read FHighlightChanged write FHighlightChanged;
-  property OnKeyDown;
+  property OnSearch: TSearchEvent read FOnSearch write FOnSearch; //**<This is called when the text should be searched, e.g. when the user clicks the buttons or types in the edit control
+  property OnClose: TNotifyEvent read FOnClose write FOnClose; //**< This is called when the search bar is closed (close button, or escape key)
+  property OnHighlightChanged: TNotifyEvent read FHighlightChanged write FHighlightChanged;//**< Called when the highlight button is pressed
+  property OnKeyDown; //**< Typical OnKeyDown-event. Setting key:=0, will prevent the default handling
 
-  property SubComponents: TSearchBarSubControls read FSubComponents write SetSubComponents;
-  property Caption: string read FCaption write SetCaption;
-  property SearchForwardText: string read FSearchForwardText write SetSearchForwardText;
-  property SearchBackwardText: string read FsearchBackwardText write SetsearchBackwardText;
-  property HighlightText: string read FHighlightText write SetHighlightText;
-  property FoundColor: TColor read FFoundColor write FFoundColor;
-  property NotFoundColor: TColor read FNotFoundColor write FNotFoundColor;
-  property NotFoundState: string read FNotFoundState write FNotFoundState;
-  property LoopAroundState: string read FLoopAroundState write FLoopAroundState;
+  property SubComponents: TSearchBarSubControls read FSubComponents write SetSubComponents; //**< This is a set specifies which sub components should be created @br The default is [fscCloseButton, fscCaption, fscSearchForward, fscSearchBackwards, fscStatus] @seealso TSearchBarSubControl
+  property Caption: string read FCaption write SetCaption; //**< @noautolink Caption of the search bar (needs fscCaption)
+  property SearchForwardText: string read FSearchForwardText write SetSearchForwardText; //**< @noautolink Caption of the button for forward search (needs fscSearchForward)
+  property SearchBackwardText: string read FsearchBackwardText write SetsearchBackwardText; //**< @noautolink Caption of the backward button (needs fscSearchBackwards)
+  property HighlightText: string read FHighlightText write SetHighlightText; //**< @noautolink Caption of the highlight all button (needs fscHighlight)
+  property FoundColor: TColor read FFoundColor write FFoundColor; //**< Background-color of the edit control when the text is found
+  property NotFoundColor: TColor read FNotFoundColor write FNotFoundColor; //**< Background-color of the edit control when the text is not found
+  property NotFoundState: string read FNotFoundState write FNotFoundState; //**< Text to display when the text is not found (needs fscStatus)
+  property LoopAroundState: string read FLoopAroundState write FLoopAroundState; //**< Text to display when the text has only been found after looping around (needs fscStatus)
 end;
 
 implementation

@@ -1,31 +1,13 @@
-{*******************************************************************************
-                                TreeListView
-  Diese Komponente ist eine Mischung zwischen der "record"-Ansicht von TListView
-  und der Baumansicht von TTreeView.
-  Im wesentlichen  wird ein Baum angezeigt, wobei für  jede Zeile  im Baum,  in
-  Spalten  zusätzliche Informationen angezeigt werden können. Jeder Eintrag in
-  den einzelnen Spalten kann unabhängig von den anderen formatiert werden.
+{**
+  This unit contains the TTreeListView which is a combination of a TreeView and a
+  ListView. This means that you can organize the items in a tree and show
+  additional information in columns.
 
-  Das Copyright liegt alleinig bei Benito van der Zander, alias BeniBela
-                                   benibela@aol.com
-                                   www.benibela.de
 
-  Die Komponente steht unter der:
-  This component is licenced under the terms of the:
-     Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Licence
-     
-  Zusammenfassung:
-    - Sie müssen den Urheber angeben
-    - Sie dürfen die Komponente nicht für kommerzielle Zwecke benutzen
-    - Die Komponente darf nur unter denselben Lizenzbedingungen veröffentlicht 
-      und verändert werden.
-
-  Summary:
-    - You must give the original author credit.
-    - You may not use this work for commercial purposes.
-    - If you alter, transform, or build upon this work, you may distribute the
-      resulting work only under a licence identical to this one.
-*******************************************************************************}
+  $Revision$
+  @lastmod $Date$
+  @author Benito van der Zander (http://www.benibela.de)
+}
 
 unit TreeListView;
 {$ifdef fpc}
@@ -36,13 +18,14 @@ unit TreeListView;
 {$endif}
 
 {$ifdef lcl}
-  {$define allowHeaderDragging}
-  {$define allowHeaderVisible}
+  {$define allowHeaderDragging}  //this needs at least lazarus 9.25 Beta(SVN)
+  {$define allowHeaderVisible}   //this needs the patch from bugs.freepascal.org/view.php?id=11727 (in 9.25)
 {$endif}
 interface
 
 uses
-  SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math,findControl
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math,
+  findControl
   {$ifdef clr},types{$endif}
   {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif}
 
@@ -304,7 +287,7 @@ type
   {$endif}
 
   {** @abstract This is the main TreeListView-class
-      You should never need to \noAutoLink create an object of a different class of this file @br
+      You should never need to @noAutoLink create an object of a different class of this file @br
       Example (use in FormCreate):
   @longCode(#
          List:=TTreeListView.create(self);
@@ -314,7 +297,7 @@ type
          List.Columns.Add.Text:='A';
          List.Columns.Add.Text:='B';
          List.BeginUpdate;
-         List.Items.Add('a').RecordItemsText[1]:='b';
+         List.Items.Add('Item').SubItems.Add('Child').RecordItemsText[1]:='Property';
          List.EndUpdate;
       #)
   }
@@ -507,7 +490,7 @@ type
 
 
     //Items
-    procedure BeginUpdate; //**< Notifies the control that the \noAutoLink items are changed, so it will not redrawn itself. @br Never forget to use this, otherwise it will be very slow.
+    procedure BeginUpdate; //**< Notifies the control that the @noAutoLink items are changed, so it will not redrawn itself. @br Never forget to use this, otherwise it will be very slow.
     procedure EndUpdate; //**< Stops the redraw block and redraws everything
     function VisibleRowCount:longint; //**< Count of visible lines
     procedure sort; //**< Sorts the items according to the current sorting options
@@ -530,13 +513,14 @@ type
     procedure deserializeColumnOrder(s: string);  //**<load the order of the columns from a string (needs FPC) @seealso serializeColumnOrder
     procedure deserializeColumnVisibility(s: string); //**<load the visibility of the columns from a string (needs FPC) @seealso serializeColumnVisibility
     procedure createSearchBar(); //**< Creates a FireFox like SearchBar
-    property SearchBar: TSearchBar read F_SearchBar;
+    property SearchBar: TSearchBar read F_SearchBar; //**< This a FireFox like search bar, call createSearchBar before using (this property)
 
     //Messages
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
 
     procedure WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage{$endif});override;
 
+    //this draws all elements
     procedure internPaint;
     procedure paint;override;
 
@@ -665,7 +649,7 @@ type
     property DragCursor;
     property DragKind   ;
     property DragMode    ;
-    property Hint         ; //**< You can't use this if toolstips is true
+    property Hint         ; //**< You can't use this if tooltips is true
     property ShowHint      ;
 
   end;
@@ -1485,10 +1469,10 @@ var i,yold,realPos,recordId:integer;
   begin
     textStartX:=xColumn*LINE_DISTANCE+listview.startx;
     if ImageBitmap<>nil then begin
-      listView.Canvas.Draw(textStartX,rec.top,ImageBitmap);
+      listView.Canvas.Draw(textStartX+rec.left,rec.top,ImageBitmap);
       TreeListView.drawTextRect(Text,textStartX+ImageBitmap.Width+LEFT_TEXT_PADDING,taLeftJustify, rec);
     end else if (TreeListView.Images<>nil) and (ImageIndex>-1) then begin
-      listView.Images.draw(listView.Canvas,textStartX,rec.Top,ImageIndex);
+      listView.Images.draw(listView.Canvas,textStartX+rec.left,rec.Top,ImageIndex);
       TreeListView.drawTextRect(Text,textStartX+listView.Images.Width+LEFT_TEXT_PADDING,taLeftJustify,rec);
     end else
       TreeListView.drawTextRect(Text,textStartX,taLeftJustify,rec);
@@ -1586,7 +1570,7 @@ begin
 
       //draw text
       for i:=0 to listView.F_Header.Sections.Count-1 do begin
-        {$IFDEF LCL}
+        {$IFDEF allowHeaderDragging}
           recordId:=listView.F_Header.Sections[i].OriginalIndex;
         {$ELSE}
           recordId:=i;
@@ -1736,9 +1720,9 @@ begin
   F_Header.OnSectionTrack:=_HeaderSectionTrack;
   F_Header.OnSectionResize:=_HeaderSectionResize;
   F_Header.OnSectionClick:=_HeaderSectionClick;
-  {$ifdef lcl}F_Header.OnSectionSeparatorDblClick:=_HeaderSectionDblClick();
-  F_Header.OnSectionEndDrag:=_HeaderSectionEndDrag;
-  F_Header.Cursor:=crArrow;{$endif}
+  {$ifdef allowHeaderDragging}F_Header.OnSectionSeparatorDblClick:=_HeaderSectionDblClick();
+  F_Header.OnSectionEndDrag:=_HeaderSectionEndDrag;{$endif}
+  {$ifdef lcl}F_Header.Cursor:=crArrow;{$endif}
 
 
   //Scrollbar initialisieren
@@ -1958,7 +1942,7 @@ function TTreeListView.GetColumnFromOriginalIndex(i: longint
   ): THeaderSection;
 var j:longint;
 begin
-  {$IFDEF LCL}
+  {$IFDEF allowHeaderDragging}
     for j:=0 to F_Header.Sections.count-1 do
       if F_Header.Sections[j].OriginalIndex=i then
         exit(F_Header.Sections[j]);
@@ -2096,8 +2080,8 @@ function TTreeListView.search(searchFor: string; searchFields: cardinal;
   begin
     Result:=true;
     for i:=0 to Columns.count-1 do
-      if (1 shl {$ifdef lcl}Columns[i].OriginalIndex{$else}i{$endif}) and searchFields <> 0 then
-        if checkStr(item,{$ifdef lcl}Columns[i].OriginalIndex{$else}i{$endif}) then exit;
+      if (1 shl {$ifdef allowHeaderDragging}Columns[i].OriginalIndex{$else}i{$endif}) and searchFields <> 0 then
+        if checkStr(item,{$ifdef allowHeaderDragging}Columns[i].OriginalIndex{$else}i{$endif}) then exit;
     Result:=false;
   end;
 
@@ -2244,7 +2228,7 @@ procedure TTreeListView.createUserColumnVisibilityPopupMenu();
 var mi: TMenuItem;
     i:longint;
 begin
-  {$ifdef lcl}
+  {$ifdef allowHeaderVisible}
   if F_HeaderColumnPopupMenu=nil then
     F_HeaderColumnPopupMenu:=TPopupMenu.Create(self);
   if F_Header.PopupMenu<>F_HeaderColumnPopupMenu then F_Header.PopupMenu:=F_HeaderColumnPopupMenu;
@@ -2597,7 +2581,7 @@ begin
         end;
     if Section=nil  then exit;
   end;
-  {$IFDEF LCL}
+  {$IFDEF allowHeaderDragging}
   NewSortColumn:=Section.OriginalIndex;
   {$ELSE}
   NewSortColumn:=Section.Index;
@@ -2730,8 +2714,8 @@ begin
     F_VScroll.Max:=i{$ifdef lcl}-1{$else}+VisibleRowCount{$endif};
     F_VScroll.PageSize:=VisibleRowCount;
     F_VScroll.LargeChange:=VisibleRowCount;
-  end else begin
-    //F_VScroll.Enabled:=true;
+  end else if F_VScroll.Enabled then begin
+    F_VScroll.Enabled:=true; //disabling doesn't always work direct??
     F_VScroll.Position:=0;
     F_VScroll.Enabled:=false;
   end;
@@ -2742,13 +2726,13 @@ begin
     j:=j+F_Header.Sections[i].Width;
   end;
   i:=j-width+F_VScroll.Width;
-  if i>0 then begin
+  if i>=0 then begin
     F_HScroll.Enabled:=true;
     F_HScroll.max:=i;
     F_HScroll.PageSize:=F_HScroll.width;
     F_HScroll.LargeChange:=F_HScroll.width;
-  end else begin
-    //F_HScroll.Enabled:=true;
+  end else if F_HScroll.Enabled then begin
+    F_HScroll.Enabled:=true; //s.a.
     F_HScroll.Position:=0;
     F_HScroll.Enabled:=false;
   end;
@@ -2961,6 +2945,7 @@ begin
                       end;
                       internPaint;
                     end;
+
     LM_ERASEBKGND: message.Result:=1;
     LM_RBUTTONUP: begin
       GetCursorPos(cursorPos);
@@ -3017,6 +3002,7 @@ var i,ypos,xpos:integer;
     oldHandle:Thandle;
     defaultDraw:boolean;
     outRect: Trect;
+    newWidth, newHeight: longint;
 begin
   //if (tlioUpdating in InternOptions_tlio) then exit;
   //windows.Beep(1000,100);
@@ -3030,7 +3016,7 @@ begin
 //  windows.Beep(1000,100);
   //F_VScroll.Repaint;
   //F_HScroll.Repaint;
-  {$IFDEF LCL}
+  {$IFDEF allowHeaderDragging}
     for i:=0 to F_Header.Sections.Count-1 do
       if F_Header.Sections[i].OriginalIndex=0 then begin
         F_TreeSectionPos:=rect(F_Header.Sections[i].Left-F_HScroll.Position,0,F_Header.Sections[i].Right-F_HScroll.Position,0);
@@ -3040,11 +3026,13 @@ begin
     F_TreeSectionPos:=rect(F_Header.Sections[0].Left-F_HScroll.Position,0,F_Header.Sections[0].Right-F_HScroll.Position,0);
   {$ENDIF}
   PaintEvenItem:=true;
+  newWidth:=width +128 - Width mod 128;//don't change the size for small control size changes
+  newHeight:=height +128 - height mod 128;
   {$ifdef lcl}
-  doubleBuffer.SetSize(width +128 - Width mod 128,height +128 - height mod 128); //don't change the size for small control size changes
+  doubleBuffer.SetSize(newwidth,newheight);
   {$else}
-  doubleBuffer.width:=width +128 - Width mod 128;
-  doubleBuffer.height:=height +128 - height mod 128;
+  doubleBuffer.width:=newwidth;
+  doubleBuffer.height:=newheight;
   {$endif}
   //if Canvas.Handle=0 then exit;
   //canvas.Lock;
