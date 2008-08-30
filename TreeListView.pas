@@ -3,10 +3,9 @@
   ListView. This means that you can organize the items in a tree and show
   additional information in columns.
 
-
   $Revision$
   @lastmod $Date$
-  @author Benito van der Zander (http://www.benibela.de)
+  @author Benito van der Zander (http://www.benibela.de) @br Thanks to: Bruce Christensen
 }
 
 unit TreeListView;
@@ -27,9 +26,7 @@ uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math,
   findControl
   {$ifdef clr},types{$endif}
-  {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif}
-
-  ;
+  {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif};
 
 type
   {$TYPEINFO ON}
@@ -66,8 +63,8 @@ type
 
       procedure Assign(list:TList);
 
-      constructor create;
-      destructor destroy;override;
+      constructor Create;
+      destructor Destroy;override;
     protected
       freeing:boolean;
       editing:boolean;
@@ -95,10 +92,11 @@ type
   protected
     F_Parent:TtreeListItem;
     F_TreeListView:TTreeListView;
-    constructor create(parent:TTreeListItem;const TreeListView:TTreeListView);
     function Get(Index: Integer): TTreeListItem; {$ifdef fpc}inline;{$endif}
     procedure Sort(CompareFunc: TTreeListItemCompare);
   public
+    constructor create(parent:TTreeListItem;const TreeListView:TTreeListView);
+
     //**This adds an item with the given caption to this list
     function Add(caption:string=''):TTreelistItem;overload;
     //**This adds an item with the given parent and caption @br
@@ -160,9 +158,9 @@ type
       //** This returns the size of this item
       function GetNecessaryWidth(listView:TTreeListView=nil): longint;
 
-      constructor create(aparent:TTreeListItem);overload;                 //**<Creates an item
-      constructor create(aparent:TTreeListItem;caption:string);overload;  //**<Creates an item with given caption
-      destructor destroy;override;
+      constructor Create(aparent:TTreeListItem);overload;                 //**<Creates an item
+      constructor Create(aparent:TTreeListItem;caption:string);overload;  //**<Creates an item with given caption
+      destructor Destroy;override;
     published
       property Text:string read F_Text write setText;
   end;
@@ -204,7 +202,7 @@ type
       Tag:longint; //**< This value can be used to store arbitrary integer values
 
       //**This creates an item with given parent and caption in the given TreeListView
-      constructor create(const parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string='');overload;
+      constructor Create(const parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string='');overload;
 
       //**This returns the size of the displayed item @br
       //** @return if column = -1 the size of the whole line is returned, otherwise the size of the given column
@@ -229,11 +227,11 @@ type
       function GetNextItemIgnoringChildren:TTreeListItem; //**<Returns the next item which is no sub item of this @br Notice that this runs in O(m), so don't use it in a loop
       function GetLastVisibleSubSubItem:TTreeListItem; //**<Returns the latest visible item which is an (indirect) children of this
       function GetLastSubSubItem:TTreeListItem; //**<Returns the latest item which is an (indirect) children of this
-      //if the item doesn't exists the current item is returned!
-      function GetNextVisibleItem(Delta:longint=1):TTreeListItem;//**<Returns the next visible item, or the Delta-th next item. Is Delta < 0 this is like a call to GetPrevVisibleItem @br Notice that this runs in O(m), so don't use it in a loop
-      function GetPrevVisibleItem(Delta:longint=1):TTreeListItem;//**<Returns the previous visible item, or the Delta-th previous item. Is Delta < 0 this is like a call to GetNextVisibleItem @br Notice that this runs in O(m), so don't use it in a loop
-      function GetNextItem():TTreeListItem;//**< Returns the next item @br Notice that this runs in O(m), so don't use it in a loop
-      function GetPrevItem():TTreeListItem;//**< Returns the previous item  @br Notice that this runs in O(m), so don't use it in a loop
+      //If the item doesn't exists the current item is returned!
+      function GetNextVisibleItem(Delta:longint=1):TTreeListItem;//**<Returns the next visible item, or the Delta-th next item. Is Delta < 0 this is like a call to GetPrevVisibleItem @br Notice that this runs in O(m), so don't use it in a loop. If the item doesn't exists the current item is returned!
+      function GetPrevVisibleItem(Delta:longint=1):TTreeListItem;//**<Returns the previous visible item, or the Delta-th previous item. Is Delta < 0 this is like a call to GetNextVisibleItem @br Notice that this runs in O(m), so don't use it in a loop. If the item doesn't exists the current item is returned!
+      function GetNextItem():TTreeListItem;//**< Returns the next item @br Notice that this runs in O(m), so don't use it in a loop. If the item doesn't exists the current item is returned!
+      function GetPrevItem():TTreeListItem;//**< Returns the previous item  @br Notice that this runs in O(m), so don't use it in a loop. If the item doesn't exists the current item is returned!
       function GetParentInList(List: TTreeListItems=nil):TTreeListItem;//**< Returns the parent which is in the given list, or nil. @br If List = nil then it takes TreeListView.Items @br If self is in the list it returns self
 
 
@@ -249,7 +247,7 @@ type
       procedure PaintTo(const listView:TTreeListView;var y:integer;const xColumn:integer;const last:boolean);
 
       //**Destroy
-      destructor destroy;override;
+      destructor Destroy;override;
 
       function SeemsSelected:boolean;//**< Returns if the items is drawn selected @br When the user selects new items there new selection state can be previewed
       property Indent:integer read F_Indent;//**< Level of indentation @br This value is not guaranteed to be correct
@@ -263,7 +261,6 @@ type
       property ImageBitmap:graphics.TBitmap read F_ImageBitmap  write F_ImageBitmap; //**< Bitmap which should be drawn before the item
       property Text:string read GetText write SetText; //**< Text in the first column of this item @br This is always equal to RecordItemsText[0]
       property Selected: boolean read F_Selected write SetSelected; //**< Controls if this item is selected or not
-//      property Font:TFont read F_Font write SetFont
   end;
 
   TTreeListInternOptions=set of (tlioDisablePainting, tlioDeleting, tlioUpdating);
@@ -326,6 +323,8 @@ type
     F_ImageList:TImageList;
 
     F_ExpandMode:TExpandMode;
+    F_RightMouseSelects: boolean;
+    F_Tooltips: boolean;
 
     //Selection
     F_MultiSelect:boolean;
@@ -382,7 +381,7 @@ type
     //Inputevents
     F_RealClickPos, F_RealMousePos: TPoint;
     F_ClickedItem: TTreeListItem;
-    F_MouseSelecting: boolean;
+    F_MouseSelecting: (msNone,msLeft,msRight);
     F_ClickAtItem:TItemEvent;
     F_ItemCollapsed:TItemEvent;
     F_ItemExpanded:TItemEvent;
@@ -427,7 +426,6 @@ type
     function GetColumnsDragable: boolean;
     procedure SetColumnsDragable(const AValue: boolean);
 
-    procedure SetTopPos(const i:integer);
     function GetTopPos:integer;
 
     procedure SetSortColumn(const AValue: longint);
@@ -435,7 +433,6 @@ type
 
     procedure SetColumns(const value:THeaderSections);
     function GetColumns: THeaderSections;
-    function GetColumnFromOriginalIndex(i:longint):THeaderSection;
 
     procedure setImageList(const images:TImageList);
 
@@ -464,26 +461,26 @@ type
     procedure _HeaderSectionClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionDblClick( HeaderControl: TEventHeaderControl;  Section: THeaderSection);
     procedure _HeaderSectionEndDrag(Sender: TObject);
-    procedure ColumnPopupMenuClick(Sender: TObject);
+    {$ifdef allowHeaderVisible}procedure ColumnPopupMenuClick(Sender: TObject);{$endif}
     procedure _HScrollChange(Sender: TObject);
     procedure _VScrollChange(Sender: TObject);
 
     procedure UpdateScrollBarPos;
   public
     { Public-Deklarationen}
-    ToolTips: boolean; //**<Specifies if tooltips are shown when item text is longer than the column
-
     hotTrackedRecordItem:TTreeListRecordItem; //**<Item currently touched by the mouse
     property selCount: longint read F_SelCount; //**<Count of selected items
     property multiSelect: boolean read F_MultiSelect write SetMultiSelect; //**<Specifies if multiple items can be selected
+    {$warnings off}
     property focused:TTreeListItem read F_Focused write SetFocused; //**<Currently focused item, it is not necessarily selected. @br Setting this property will not select the new item
+    {$warnings on}
     property Selected:TTreeListItem read F_Focused write SetSelected; //**<This is the same as Focused, but setting this property will select the item and deselect every other one
     property SortColumn: longint read F_SortColumn write SetSortColumn; //**<Column currently used for sorting
 
     procedure UpdateScrollSize; //**<@deprecated Recalculates the necessary scrollbar properties @br Normally you don't need to call this
 
     //**Create
-    constructor create(aowner:TComponent);override;
+    constructor Create(aowner:TComponent);override;
 
     function GetItemAtPos(const y:integer):TTreeListItem;//**<Returns the item at position y
     function GetRecordItemAtPos(const x,y:integer):TTreeListRecordItem;//**<Returns the record item at position x,y @br Notice that it doesn't check for visibility, e.g you can use negative coordinates or find items hidden by the scrollbars
@@ -505,14 +502,14 @@ type
     //Header
 
     function ColumnFromOriginalIndex(index: longint):  THeaderSection; //**< If the columns can be dragged this will return them in the old order
-    procedure createUserColumnVisibilityPopupMenu(); //**< Creates a popupmenu to hide/show columns @br You need to call this method after every removing/creating of columns, because the TreeListView doesn't known when the columns are changed, since you have direct access to the headercontrol sections.@br This needs FPC
+    procedure CreateUserColumnVisibilityPopupMenu(); //**< Creates a popupmenu to hide/show columns @br You need to call this method after every removing/creating of columns, because the TreeListView doesn't known when the columns are changed, since you have direct access to the headercontrol sections.@br This needs FPC
     function serializeColumnWidths: string; //**<save the widths of the columns in a string @seealso deserializeColumnWidths
     function serializeColumnOrder: string; //**<save the order of the columns in a string (needs FPC) @seealso deserializeColumnOrder
     function serializeColumnVisibility: string; //**<save the visibility of the columns in a string (needs FPC) @seealso deserializeColumnVisibility
     procedure deserializeColumnWidths(s: string); //**<load the widths of the columns from a string @seealso serializeColumnWidths
     procedure deserializeColumnOrder(s: string);  //**<load the order of the columns from a string (needs FPC) @seealso serializeColumnOrder
     procedure deserializeColumnVisibility(s: string); //**<load the visibility of the columns from a string (needs FPC) @seealso serializeColumnVisibility
-    procedure createSearchBar(); //**< Creates a FireFox like SearchBar
+    procedure CreateSearchBar(); //**< Creates a FireFox like SearchBar
     property SearchBar: TSearchBar read F_SearchBar; //**< This a FireFox like search bar, call createSearchBar before using (this property)
 
     //Messages
@@ -522,20 +519,59 @@ type
 
     //this draws all elements
     procedure internPaint;
-    procedure paint;override;
+    procedure Paint;override;
 
     //Destroy
-    destructor destroy;override;
+    destructor Destroy;override;
 
-    property TopPos:integer read GetTopPos write SetTopPos; //**< V-Scrollposition calculated in pixels (=position of Items[0])
+    property TopPos:integer read GetTopPos; //**< V-Scrollposition calculated in pixels (=position of Items[0])
 
   published
     { Published-Deklarationen }
     {-------------------------------START Ereignisse---------------------------}
+
+    //Header-Eigenschaften
+    property Columns:THeaderSections read GetColumns write SetColumns; //**< All columns
     property ColumnsDragable: boolean read GetColumnsDragable write SetColumnsDragable; //**< Determines if the user can move the columns around (needs FPC)
-    
-    //Sortierungsereignisse
+
+    property RowHeight:integer read F_RowHeight write SetRowHeight; //**< Height of a row
+
+    property Images:TImageList read F_ImageList write setImageList; //**< ImageList used to get the images for items using the TTreeListView.ImageIndex property
+
+    property HorizontalLineMode:TLineMode read F_HorizontalLines write F_HorizontalLines; //**< Determines  how/if lines are drawn between the items
+    property HorizontalLineColor:TColor read F_HorizontalLineColor write F_HorizontalLineColor;
+    property VerticalLineMode:TLineMode read F_VerticalLines write F_VerticalLines; //**< Determines  how/if lines are drawn between the columns
+    property VerticalLineColor:TColor read F_VerticalLineColor write F_VerticalLineColor;
+    property RootLineMode:TLineMode read F_RootLines write F_RootLines; //**< Determines  how/if lines are drawn to connect the tree items
+    property RootLineColor:TColor read F_RootLineColor write F_RootLineColor;
+    property ColorSearchMark: tcolor read F_ColorSearchMark write F_ColorSearchMark;
+    property ColorSearchMarkField: tcolor read F_ColorSearchMarkField write F_ColorSearchMarkField;
+
+    property RightMouseSelects: boolean read F_RightMouseSelects write F_RightMouseSelects; //**< Determines if you can select items using the right mouse button
+    property ToolTips: boolean read F_Tooltips write F_Tooltips; //**<Specifies if tooltips are shown when item text is longer than the column
+    property ExpandMode:TExpandMode read F_ExpandMode write F_ExpandMode; //**< Determines  how/if the user is allowed to collapse/expand items
+    property HotTrackSubTextItems:Boolean read F_HotTrackSubTextItems write SetHotTrackSubTextItems; //**< Determines if the record items are hot tracked
+
+    property HotTrackFont:TFont read F_HotTrackFont write SetHotTrackFont;
+    property Font;
+    property SelectedFont:TFont read F_SelectedFont write SetSelectedFont;
+    property SelectedHotTrackFont:TFont read F_SelectedHotTrackFont write SetSelectedHotTrackFont;
+
+    property Striped:boolean read F_Striped write F_Striped; //**< Determines if the item background is drawn alternating
+    property StripedOddColor:TColor read F_StripedOddColor write F_StripedOddColor;
+    property StripedEvenColor:TColor read F_StripedEvenColor write F_StripedEvenColor;
+    property StripInvisibleItems: boolean read F_StripInvisibleItems write F_StripInvisibleItems; //**< Controls if invisible items are counted when the control determines if a item is odd or even
+
+    property SelectBackColor:TColor read F_SelectBackColor write F_SelectBackColor;
+    property ButtonColor:TColor read F_ButtonColor write F_ButtonColor; //**< Color of the expand/collaps button
+    property BackGroundColor:TColor read F_BgColor write F_BgColor;
+
+    property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to create new ones
+
+
     property Sorted: boolean read F_Sorted write SetSorted; //**< Controls of the items should be @noAutoLink sorted @br Notice that the items are not always automatically sorted (e.g. new inserted items are not)
+
+    //Sortierungsereignisse
     property OnCompareItems: TCompareTreeListItemsEvent read F_OnCompareItems write F_OnCompareItems; //**< Event which is called when two items are compared during sorting @br The default sorting tries first to compare the text as numbers than as text, every level is @noAutoLink sorted on its own, parents are not changed
     property OnUserSortItemsEvent: TUserSortItemsEvent read F_OnUserSortItems write F_OnUserSortItems; //**< Called when the user clicks on the header to resort the items
     property OnItemsSortedEvent: TNotifyEvent read F_OnItemsSorted write F_OnItemsSorted; //**< Called after the items have been @noAutoLink sorted
@@ -565,73 +601,7 @@ type
     property OnHeaderSectionTrack:TSectionTrackEvent read F_HeaderSectionTrack write F_HeaderSectionTrack;
     {$endif}
 
-
-    //Freigeben von TWinControlereignissen
-    property OnDockDrop;
-	   property OnDockOver ;
-    property OnEnter     ;
-    property OnExit       ;
-    property OnGetSiteInfo ;
-    property OnKeyDown      ;
-    property OnKeyPress      ;
-    property OnKeyUp          ;
-    property OnMouseWheel      ;
-    property OnMouseWheelDown   ;
-    property OnMouseWheelUp      ;
-    property OnUnDock             ;
-
-    //Freigeben von TControl-Ereignissen
-    {$ifndef fpc}property OnCanResize;{$endif}
-    property OnClick                ;
-    property OnConstrainedResize     ;
-    property OnDblClick               ;
-    property OnDragDrop                 ;
-    property OnDragOver                  ;
-    property OnEndDock                    ;
-    property OnEndDrag                     ;
-    property OnMouseDown                    ;
-    property OnMouseMove                     ;
-    property OnMouseUp                        ;
-    property OnResize                          ;
-    property OnStartDock                        ;
-    property OnStartDrag                         ;
-
-{--------------------------------ENDE Ereignisss---------------------------}
-
-    //Header-Eigenschaften
-    property Columns:THeaderSections read GetColumns write SetColumns; //**< All columns
-
-    property RowHeight:integer read F_RowHeight write SetRowHeight; //**< Height of a row
-
-    property Images:TImageList read F_ImageList write setImageList; //**< ImageList used to get the images for items using the TTreeListView.ImageIndex property
-
-    property HorizontalLineMode:TLineMode read F_HorizontalLines write F_HorizontalLines; //**< Determines  how/if lines are drawn between the items
-    property HorizontalLineColor:TColor read F_HorizontalLineColor write F_HorizontalLineColor;
-    property VerticalLineMode:TLineMode read F_VerticalLines write F_VerticalLines; //**< Determines  how/if lines are drawn between the columns
-    property VerticalLineColor:TColor read F_VerticalLineColor write F_VerticalLineColor;
-    property RootLineMode:TLineMode read F_RootLines write F_RootLines; //**< Determines  how/if lines are drawn to connect the tree items
-    property RootLineColor:TColor read F_RootLineColor write F_RootLineColor;
-    property ColorSearchMark: tcolor read F_ColorSearchMark write F_ColorSearchMark;
-    property ColorSearchMarkField: tcolor read F_ColorSearchMarkField write F_ColorSearchMarkField;
-
-    property ExpandMode:TExpandMode read F_ExpandMode write F_ExpandMode; //**< Determines  how/if the user is allowed to collapse/expand items
-    property HotTrackSubTextItems:Boolean read F_HotTrackSubTextItems write SetHotTrackSubTextItems; //**< Determines if the record items are hot tracked
-
-    property HotTrackFont:TFont read F_HotTrackFont write SetHotTrackFont;
-    property Font;
-    property SelectedFont:TFont read F_SelectedFont write SetSelectedFont;
-    property SelectedHotTrackFont:TFont read F_SelectedHotTrackFont write SetSelectedHotTrackFont;
-
-    property Striped:boolean read F_Striped write F_Striped; //**< Determines if the item background is drawn alternating
-    property StripedOddColor:TColor read F_StripedOddColor write F_StripedOddColor;
-    property StripedEvenColor:TColor read F_StripedEvenColor write F_StripedEvenColor;
-    property StripInvisibleItems: boolean read F_StripInvisibleItems write F_StripInvisibleItems; //**< Controls if invisible items are counted when the control determines if a item is odd or even
-
-    property SelectBackColor:TColor read F_SelectBackColor write F_SelectBackColor;
-    property ButtonColor:TColor read F_ButtonColor write F_ButtonColor; //**< Color of the expand/collaps button
-    property BackGroundColor:TColor read F_BgColor write F_BgColor;
-
-    property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to create new ones
+    //Freigeben (parent properties)
 
     property BorderWidth;
     {$ifndef fpc}property BevelWidth;
@@ -652,6 +622,35 @@ type
     property Hint         ; //**< You can't use this if tooltips is true
     property ShowHint      ;
 
+    //Freigeben von TWinControlereignissen
+    property OnDockDrop;
+    property OnDockOver;
+    property OnEnter;
+    property OnExit;
+    property OnGetSiteInfo;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseWheel;
+    property OnMouseWheelDown;
+    property OnMouseWheelUp;
+    property OnUnDock;
+
+    //Freigeben von TControl-Ereignissen
+    {$ifndef fpc}property OnCanResize;{$endif}
+    property OnClick;
+    property OnConstrainedResize;
+    property OnDblClick;
+    property OnDragDrop;
+    property OnDragOver;
+    property OnEndDock;
+    property OnEndDrag;
+    property OnMouseDown;
+    property OnMouseMove;
+    property OnMouseUp;
+    property OnResize;
+    property OnStartDock;
+    property OnStartDrag;
   end;
 
 procedure Register;
@@ -674,7 +673,7 @@ const HeaderItemDistance=2; //Distance between Header and first drawn item
 ################################################################################
 }{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}
 
-constructor TObjectList.create;
+constructor TObjectList.Create;
 begin
   inherited;
   editing:=false;
@@ -730,7 +729,6 @@ begin
     DoChange;
 end;
 procedure TObjectList.Clear;
-var i:longint;
 begin
   if not editing then
     DoChanging;
@@ -824,7 +822,7 @@ begin
 //  DoChange;
   freeing:=false;
 end;
-destructor TObjectList.destroy;
+destructor TObjectList.Destroy;
 begin
   FreeObjects;
   inherited;
@@ -858,7 +856,7 @@ procedure TTreeListItems.Sort(CompareFunc: TTreeListItemCompare);
 var temp: array of TTreeListItem;
 
   procedure mergeSort(f,t:longint);
-  var i,a,b,d,p: longint;
+  var {$ifndef fpc}i,{$endif}a,b,d,p: longint;
   begin
     if f>=t then exit;
     d:=(f+t) div 2;
@@ -904,9 +902,9 @@ begin
   mergeSort(0,count-1);
 end;
 
-constructor TTreeListItems.create(parent:TTreeListItem;const TreeListView:TTreeListView);
+constructor TTreeListItems.Create(parent:TTreeListItem;const TreeListView:TTreeListView);
 begin
-  inherited create;
+  inherited Create;
   F_Parent:=parent;
   F_TreeListView:=TreeListView;
 end;
@@ -1051,7 +1049,7 @@ end;
 
 function TRecordItemList.Add:TTreeListRecordItem;
 begin
-  Result:=TTreeListRecordItem.create(owner);
+  Result:=TTreeListRecordItem.Create(owner);
   result.F_Index:=Count;
   inherited add(result);
 end;
@@ -1115,29 +1113,28 @@ begin
 end;*)
 
 function TTreeListRecordItem.GetNecessaryWidth(listView:TTreeListView=nil): longint;
-var i:integer;
 begin
   if listView=nil then listView:=F_Parent.F_TreeListView;
   selectFont(listView.Canvas);
   Result:=listView.Canvas.TextWidth(Text);
 end;
 
-constructor TTreeListRecordItem.create(aparent:TTreeListItem);
+constructor TTreeListRecordItem.Create(aparent:TTreeListItem);
 begin
-  inherited create;
+  inherited Create;
   F_Parent:=aparent;
 end;
 
-constructor TTreeListRecordItem.create(aparent:TTreeListItem; caption: string);
+constructor TTreeListRecordItem.Create(aparent:TTreeListItem; caption: string);
 begin
-  inherited create;
+  inherited Create;
   F_Parent:=aparent;
   SetText(caption);
 end;
 
-destructor TTreeListRecordItem.destroy;
+destructor TTreeListRecordItem.Destroy;
 begin
-  inherited destroy;
+  inherited Destroy;
 end;
 
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{
@@ -1153,14 +1150,14 @@ end;
 }{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}
 
 //Create
-constructor TTreeListItem.create(const Parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string);
+constructor TTreeListItem.Create(const Parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string);
 begin
-  inherited create;
+  inherited Create;
   F_Parent:=parent;
-  F_RecordItems:=TRecordItemList.create;
+  F_RecordItems:=TRecordItemList.Create;
   F_RecordItems.Owner:=self;
   F_RecordItems.Add(ACaption);
-  F_SubItems:=TTreeListItems.create(self,TreeListView);
+  F_SubItems:=TTreeListItems.Create(self,TreeListView);
   F_Indent:=-1;
   F_TreeListView:=TreeListView;
   f_Selected:=false;
@@ -1260,7 +1257,7 @@ end;
 
 function TTreeListItem.SeemsSelected: boolean;
 begin
-  if TreeListView.F_MouseSelecting then result:=Selected xor F_MouseSelected
+  if TreeListView.F_MouseSelecting<>msNone then result:=Selected xor F_MouseSelected
   else result:=Selected;
 end;
 
@@ -1461,7 +1458,7 @@ begin
 end;
 
 procedure TTreeListItem.PaintTo(const listView:TTreeListView;var y:integer;const xColumn:integer;const last:boolean);
-var i,yold,realPos,recordId:integer;
+var i,yold,recordId:integer;
     defaultDraw:boolean;
     rec:Trect;
   procedure drawTreeColumnText;
@@ -1617,7 +1614,7 @@ begin
 end;
 
 //Destroy
-destructor TTreeListItem.destroy;
+destructor TTreeListItem.Destroy;
 begin
   if self=TreeListView.focused then TreeListView.focused:=nil;
   if Selected then dec(TreeListView.f_selCount);
@@ -1640,7 +1637,7 @@ end;
 }{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}
 
 //Create
-constructor TTreeListView.create(aowner:TComponent);
+constructor TTreeListView.Create(aowner:TComponent);
 begin
   inherited;
   F_Items:=TTreeListItems.Create(nil,self);
@@ -1648,18 +1645,19 @@ begin
   F_Items.freeing:=false;
 
   ToolTips:=true;
-  doubleBuffer:=graphics.TBitmap.create;
+  RightMouseSelects:=true;
+  doubleBuffer:=graphics.TBitmap.Create;
 
   //Fonts
-  F_HotTrackFont:=TFont.create;
+  F_HotTrackFont:=TFont.Create;
   F_HotTrackFont.Color:=clBlue;
   F_HotTrackFont.Style:=[fsUnderline];
 
-  F_SelectedHotTrackFont:=TFont.create;
+  F_SelectedHotTrackFont:=TFont.Create;
   F_SelectedHotTrackFont.Color:=clHighlightText;
   F_SelectedHotTrackFont.Style:=[fsBold,fsUnderline];
 
-  F_SelectedFont:=TFont.create;
+  F_SelectedFont:=TFont.Create;
   F_SelectedFont.Color:=clHighlightText;
   F_SelectedFont.Style:=[];
 
@@ -1701,7 +1699,7 @@ begin
   TabStop:=true;
 
   //Headercontrol initialisieren
-  F_Header:=THeaderControl.create(self);
+  F_Header:=THeaderControl.Create(self);
   F_Header.Align:=alNone;
   F_Header.parent:=Self;
   F_Header.Visible:=true;
@@ -1726,7 +1724,7 @@ begin
 
 
   //Scrollbar initialisieren
-  F_VScroll:=TScrollbar.create(self);
+  F_VScroll:=TScrollbar.Create(self);
   F_VScroll.parent:=self;
   F_VScroll.Enabled:=false;
   F_VScroll.Visible:=true;
@@ -1737,7 +1735,7 @@ begin
 
 
   //Scrollbar initialisieren
-  F_HScroll:=TScrollbar.create(self);
+  F_HScroll:=TScrollbar.Create(self);
   F_HScroll.parent:=self;
   F_HScroll.Enabled:=false;
   F_HScroll.Visible:=true;
@@ -1804,18 +1802,18 @@ begin
   {$ifdef allowHeaderDragging}F_Header.DragReorder:=AValue;{$endif}
 end;
 
+{$ifdef allowHeaderVisible}
 procedure TTreeListView.ColumnPopupMenuClick(Sender: TObject);
 var mi: TMenuItem;
 begin
-  {$ifdef allowHeaderVisible}
   if not (sender is tmenuitem) then exit;
   mi:=TMenuItem(sender);
   if (mi.tag<0) or (mi.tag>=Columns.Count) then exit;
   mi.Checked:=not mi.Checked;
   Columns[mi.Tag].visible:=mi.Checked;
   internPaint;
-  {$endif}
 end;
+{$endif}
 
 procedure TTreeListView.SearchBarKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
@@ -1846,12 +1844,12 @@ end;
 
 procedure TTreeListView.SearchBarSearch(sender: TObject; incremental,
   backwards: boolean);
-var step: longint;
 begin
   if sender<>F_SearchBar then exit;
   if F_SearchBar.SearchLocation<0 then F_SearchBar.SearchLocation:=0;
-  if backwards then step:=-1 else step:=1;
-  SearchBar.FindState:= search(F_SearchBar.SearchText, cardinal(F_SearchBar.SearchLocations.Objects[F_SearchBar.SearchLocation]),backwards,incremental);
+  SearchBar.FindState:= search(F_SearchBar.SearchText,
+                               cardinal(F_SearchBar.SearchLocations.Objects[F_SearchBar.SearchLocation]),
+                               backwards,incremental);
 end;
 
 function TTreeListView.DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
@@ -1920,10 +1918,6 @@ begin
   F_Items.Assign(value);
 end;
 
-procedure TTreeListView.SetTopPos(const i:integer);
-begin
-end;
-
 function TTreeListView.GetTopPos:integer;
 begin
   result:=HeaderItemDistance+F_Header.Height-F_VScroll.Position*RowHeight;
@@ -1936,20 +1930,6 @@ end;
 function TTreeListView.GetColumns:THeaderSections;
 begin
   Result:=F_Header.Sections;
-end;
-
-function TTreeListView.GetColumnFromOriginalIndex(i: longint
-  ): THeaderSection;
-var j:longint;
-begin
-  {$IFDEF allowHeaderDragging}
-    for j:=0 to F_Header.Sections.count-1 do
-      if F_Header.Sections[j].OriginalIndex=i then
-        exit(F_Header.Sections[j]);
-    result:=nil;
-  {$ELSE}
-    result:=F_Header.Sections[i];
-  {$ENDIF}
 end;
 
 function TTreeListView.GetItemAtPos(const y:integer):TTreeListItem;
@@ -2040,7 +2020,6 @@ function TTreeListView.search(searchFor: string; searchFields: cardinal;
   function checkStr(item:TTreeListItem; col: integer):boolean;
   var stp:integer;
       currentText:string;
-      tempRec: TRect;
   begin
     result:=false;
     currentText:=item.RecordItemsText[col];
@@ -2211,10 +2190,10 @@ begin
 end;
 
 function TTreeListView.ColumnFromOriginalIndex(index: longint): THeaderSection;
-var i:longint;
+{$IFDEF allowHeaderDragging}var i:longint;{$endif}
 begin
   result:=nil;
-  {$Ifdef FPC}
+  {$IFDEF allowHeaderDragging}
     for i:=0 to F_Header.Sections.count-1 do
       if F_Header.Sections[i].OriginalIndex = index then
         exit(F_Header.Sections[i]);
@@ -2222,11 +2201,13 @@ begin
     if index <Columns.count then
       result:=Columns[index];
   {$ENDIF}
-end
-;
-procedure TTreeListView.createUserColumnVisibilityPopupMenu();
+end;
+
+procedure TTreeListView.CreateUserColumnVisibilityPopupMenu();
+{$ifdef allowHeaderVisible}
 var mi: TMenuItem;
     i:longint;
+{$endif}
 begin
   {$ifdef allowHeaderVisible}
   if F_HeaderColumnPopupMenu=nil then
@@ -2246,26 +2227,30 @@ end;
 
 function TTreeListView.serializeColumnWidths: string;
 var i:longint;
+    {$ifdef allowHeaderVisible}
     vis:boolean;
+    {$endif}
     sec:THeaderSection;
 begin
   Result:='';
   for i:=0 to F_Header.Sections.Count-1 do begin
     sec:=ColumnFromOriginalIndex(i);
-    {$ifdef fpc}
+    {$ifdef allowHeaderVisible}
       vis:=sec.Visible;
       if not vis then
         sec.Visible :=true;
     {$endif}
     result:=result+IntToStr(sec.Width)+',';
-    {$ifdef fpc}
+    {$ifdef allowHeaderVisible}
     if not vis then sec.Visible :=false;
     {$endif}
   end;
 end;
 
 function TTreeListView.serializeColumnOrder: string;
+{$IFDEF allowHeaderDragging}
 var i:longint;
+{$endif}
 begin
 {$ifdef allowHeaderDragging}
   result:='';
@@ -2301,11 +2286,13 @@ begin
 end;
 
 procedure TTreeListView.deserializeColumnOrder(s: string);
+{$ifdef allowHeaderDragging}
 var i:longint;
     sep: longint;
     tempOrder: array[0..20] of longint;
+{$endif}
 begin
-{$ifdef fpc}
+{$ifdef allowHeaderDragging}
   //setting random index can changes other ones, therefore they will be set ascending
   //setlength(tempOrder,F_Header.Sections.Count);
   for i:=0 to high(tempOrder) do
@@ -2324,19 +2311,21 @@ begin
 end;
 
 procedure TTreeListView.deserializeColumnVisibility(s: string);
+{$ifdef allowHeaderVisible}
 var i:longint;
+{$endif}
 begin
-{$ifdef fpc}
+{$ifdef allowHeaderVisible}
   for i:=0 to min(length(s)-1,F_Header.Sections.Count-1) do
     ColumnFromOriginalIndex(i).Visible:=s[i+1]='+';
 {$endif}
 end;
 
-procedure TTreeListView.createSearchBar();
+procedure TTreeListView.CreateSearchBar();
 var i:longint;
 begin
   if F_SearchBar = nil then begin
-    F_SearchBar:=TSearchBar.create(self);
+    F_SearchBar:=TSearchBar.Create(self);
     F_SearchBar.Parent:=self;
     F_SearchBar.OnSearch:=SearchBarSearch;
     F_SearchBar.OnKeyDown:=SearchBarKeyDown;
@@ -2371,9 +2360,8 @@ end;
 
 procedure TTreeListView.SetHotTrackSubTextItems(const value:boolean);
 begin
-//  if value then hotTrackedTextItem:=
-//  else hotTrackedTextItem:=nil;
   F_HotTrackSubTextItems:=value;
+  if not value then hotTrackedRecordItem:=nil;
 end;
 
 function TTreeListView.RealControlHeight(c: Twincontrol): longint;
@@ -2422,7 +2410,7 @@ var temp: TRect;
  end;
 
 var
-    part,searched,sr: string;
+    searched: string;
     stpos,i: longint;
     highlightText: boolean;
     parts: array of string;
@@ -2431,6 +2419,7 @@ begin
   temp:=rec;
   temp.left:=temp.left+extraindentation;
   highlightText:=searchDraw or F_HighlightAll;
+  stpos:=0;
   if highlightText then
     if F_SearchBar = nil then highlightText := false
     else begin
@@ -2458,7 +2447,7 @@ begin
      case align of
        taCenter: textStart:=(temp.right+temp.left-canvas.TextWidth(s)) div 2;
        taRightJustify: textStart:=temp.Right-Canvas.TextWidth(s);
-       taLeftJustify: textStart:=temp.Left;
+       else textStart:=temp.Left;
      end;
 
      //split
@@ -2497,7 +2486,6 @@ begin
      temp.right:=rec.right;
      canvas.brush.Style:=bsClear;
      for i:=0 to high(parts) do begin
-       stpos:=temp.left;
        if temp.left>=rec.right then exit;
        drawTextDef(parts[i]);
        temp.left:=temp.left+canvas.TextWidth(parts[i]);
@@ -2790,23 +2778,29 @@ begin
     LM_MOUSEMOVE: begin
       inherited;
       shiftState:=KeyDataToShiftState(TLMMouseMove(message).Keys);
-      if (F_ClickedItem<>nil) and (MK_LBUTTON and message.wParam <> 0) and
-         (multiSelect) then begin
+      if (F_ClickedItem<>nil) and (multiSelect) and   // \/ left or right, not both
+          ((MK_LBUTTON and message.wParam <> 0)<>(MK_RBUTTON and message.wParam <> 0))
+          and ((MK_LBUTTON and message.wParam <> 0) or
+               (RightMouseSelects and (MK_RBUTTON and message.wParam <> 0))) then begin
         F_RealMousePos:=point(TLMMouseMove(message).XPos+F_HScroll.Position,
                               TLMMouseMove(message).YPos+F_VScroll.Position);
-        if not F_MouseSelecting then begin
-          F_MouseSelecting:=sqr(F_RealClickPos.x-F_RealMousePos.x)+
-                            sqr(F_RealClickPos.y-F_RealMousePos.y)>100 ;
-        end;
-        if F_MouseSelecting then begin
+        if F_MouseSelecting=msNone then
+          if sqr(F_RealClickPos.x-F_RealMousePos.x)+ sqr(F_RealClickPos.y-F_RealMousePos.y)>100 then
+            if MK_RBUTTON and message.wParam <> 0 then F_MouseSelecting:=msRight
+            else F_MouseSelecting:=msLeft;
+        if F_MouseSelecting<>msNone then begin
           itemAtPos:=GetItemAtPos(TLMMouseMove(message).YPos);
           if F_ClickedItem.Selected then begin
             F_ClickedItem.F_MouseSelected:=true;
             F_ClickedItem.Selected:=false;
           end;
-          if itemAtPos<>nil then selectRange(F_ClickedItem,itemAtPos,true);
+          if itemAtPos<>nil then begin
+            selectRange(F_ClickedItem,itemAtPos,true);
+            ensureVisibility(itemAtPos);
+          end;
         end;
       end;
+
 
       if (TLMMouseMove(message).XPos<F_VScroll.Left) and (TLMMouseMove(message).YPos>F_Header.Height)
          and (TLMMouseMove(message).YPos<F_HScroll.Top) then
@@ -2815,8 +2809,8 @@ begin
         tempRecordItem:=nil;
       if tempRecordItem<>nil then begin
         if ToolTips then
-          if (GetColumnFromOriginalIndex(tempRecordItem.F_Index)<>nil) and
-            (tempRecordItem.GetNecessaryWidth(self)+10>GetColumnFromOriginalIndex(tempRecordItem.F_Index).Width) then begin
+          if (ColumnFromOriginalIndex(tempRecordItem.F_Index)<>nil) and
+            (tempRecordItem.GetNecessaryWidth(self)+10>ColumnFromOriginalIndex(tempRecordItem.F_Index).Width) then begin
             hint:=tempRecordItem.Text;
             ShowHint:=true;
           end else ShowHint:=false;
@@ -2828,43 +2822,51 @@ begin
           internPaint;
         end;
     end;
-    LM_LBUTTONDOWN: begin
+    LM_LBUTTONDOWN,LM_RBUTTONDOWN: begin
       SetFocus;
       if TLMLBUTTONDOWN(message).YPos<F_HScroll.top then begin
         shiftState:=KeyDataToShiftState(TLMLBUTTONDOWN(message).Keys);
-        F_RealClickPos:=point(TLMLBUTTONDOWN(message).XPos+F_HScroll.Position,TLMLBUTTONDOWN(message).YPos+F_VScroll.Position);
         itemAtPos:=GetItemAtPos(TLMLBUTTONDOWN(message).YPos);
-        if (itemAtPos<>nil) and
-           (TLMLBUTTONDOWN(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
-           (TLMLBUTTONDOWN(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
-          itemAtPos.Expanded:=not itemAtPos.Expanded;
-          if itemAtPos=focused then internPaint;
+        if message.msg=LM_LBUTTONDOWN then begin
+          if (itemAtPos<>nil) and
+             (TLMLBUTTONDOWN(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
+             (TLMLBUTTONDOWN(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
+            itemAtPos.Expanded:=not itemAtPos.Expanded;
+            if itemAtPos=focused then internPaint;
+          end;
         end;
-        if (itemAtPos<>nil)and(assigned (F_ClickAtItem)) then F_ClickAtItem(self,itemAtPos);
-        if (itemAtPos<>nil)and(assigned (F_ClickAtRecordItem)) then begin
-          tempRecordItem:=itemAtPos.GetRecordItemAtPos(self,TLMLBUTTONDOWN(message).XPos);
-          if tempRecordItem<>nil then
-            F_ClickAtRecordItem(self,itemAtPos,tempRecordItem);
+        if (message.msg=LM_LBUTTONDOWN) or RightMouseSelects then begin
+          F_ClickedItem:=itemAtPos;
+          F_RealClickPos:=point(TLMLBUTTONDOWN(message).XPos+F_HScroll.Position,TLMLBUTTONDOWN(message).YPos+F_VScroll.Position);
+          nextToFocus:=itemAtPos;
+          if multiSelect and (nextToFocus<>nil) and (ssCtrl in shiftState) then
+            nextToFocus.Selected:=not nextToFocus.Selected;
+          if F_MouseSelecting<>msNone then begin
+            F_MouseSelecting:=msNone;
+            setMouseSelection(Items);
+          end;
         end;
-        nextToFocus:=itemAtPos;
-        F_ClickedItem:=itemAtPos;
-        if multiSelect and (nextToFocus<>nil) and (ssCtrl in shiftState) then
-          nextToFocus.Selected:=not nextToFocus.Selected;
       end;
       inherited;
     end;
-    LM_LBUTTONUP: begin
-      if F_MouseSelecting then begin
+    LM_LBUTTONUP,LM_RBUTTONUP: begin
+      if F_MouseSelecting<>msNone then begin
         F_ClickedItem:=nil;
-        F_MouseSelecting:=false;
+        F_MouseSelecting:=msNone;
         setMouseSelection(Items);
         internPaint;
-      end else if F_ClickedItem <>nil then begin
-        if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
-        if assigned(OnClickAtRecordItem) then begin
-          tempRecordItem:=F_ClickedItem.GetRecordItemAtPos(self,TLMLButtonUp(message).XPos);
-          if tempRecordItem<>nil then OnClickAtRecordItem(self,F_ClickedItem,tempRecordItem);
+      end;
+      if message.msg=LM_LBUTTONDOWN then begin
+        if F_ClickedItem = GetItemAtPos(TLMLBUTTONDOWN(message).YPos) then begin
+          if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
+          if assigned(OnClickAtRecordItem) then begin
+            tempRecordItem:=F_ClickedItem.GetRecordItemAtPos(self,TLMLButtonUp(message).XPos);
+            if tempRecordItem<>nil then OnClickAtRecordItem(self,F_ClickedItem,tempRecordItem);
+          end;
         end;
+      end else if message.msg=LM_RBUTTONUP then begin
+        GetCursorPos(cursorPos);
+        if assigned(PopupMenu) then PopupMenu.PopUp(cursorPos.x,cursorPos.Y);
       end;
       inherited;
     end;
@@ -2947,11 +2949,6 @@ begin
                     end;
 
     LM_ERASEBKGND: message.Result:=1;
-    LM_RBUTTONUP: begin
-      GetCursorPos(cursorPos);
-      if assigned(PopupMenu) then PopupMenu.PopUp(cursorPos.x,cursorPos.Y)
-      else inherited;
-    end;
     LM_KEYUP:
       if (TLMKeyUp(message).CharCode = VK_APPS) and assigned(PopupMenu) then begin
         GetCursorPos(cursorPos);
@@ -3060,16 +3057,15 @@ begin
 //        Rectangle(handle,0,F_Header.Height,ClientWidth-F_VScroll.Width,ClientHeight-F_HScroll.Height);
           FillRect(rect(0,F_Header.Height,ClientWidth-F_VScroll.Width,ClientHeight-F_HScroll.Height));
         end;
+
         //Items
         ypos:=TopPos;
         if RootLineMode <> lmNone then StartX:=13
         else StartX:=3;
-        xpos:=startx-F_HScroll.Position;
-        for i:=0 to Items.count-1 do begin
-          (TObject(Items[i]) as TTreeListItem).PaintTo(self,ypos,0,i = Items.count-1);
-  //        if i=Items.count-2 then
-//           DrawAlignDotLine(xpos-5,max(TopPos,f_header.height),xpos-5,ypos+RowHeight div 2,clBlack);
-        end;
+
+        for i:=0 to Items.count-1 do
+          Items[i].PaintTo(self,ypos,0,i = Items.count-1);
+
         //Lines
         if defaultDraw then begin
           xpos:=-F_HScroll.Position;
@@ -3086,7 +3082,7 @@ begin
             end;
           end;
         end;
-        if F_MouseSelecting then
+        if F_MouseSelecting<>msNone then
           DrawFocusRect(srect(F_RealClickPos.x-F_HScroll.Position,F_RealClickPos.y-F_VScroll.Position,
                               F_RealMousePos.x-F_HScroll.Position,F_RealMousePos.y-F_VScroll.Position));
         DoCustomBackgroundDrawEvent(cdetPostPaint);
@@ -3106,13 +3102,13 @@ begin
 end;
 
 //Ausgaberoutinen
-procedure TTreeListView.paint;
+procedure TTreeListView.Paint;
 begin
   internPaint;
 end;
 
 //Destroy
-destructor TTreeListView.destroy;
+destructor TTreeListView.Destroy;
 begin
   Include(InternOptions_tlio,tlioDeleting);
   F_HotTrackFont.free;
