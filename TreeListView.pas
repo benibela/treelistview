@@ -5,7 +5,8 @@
 
   $Revision$
   @lastmod $Date$
-  @author Benito van der Zander (http://www.benibela.de) @br Thanks to: Bruce Christensen
+  @author Benito van der Zander (http://www.benibela.de)
+  @author Thanks to: Bruce Christensen
 }
 
 unit TreeListView;
@@ -1747,6 +1748,7 @@ begin
   {$ifdef lcl}F_HScroll.Cursor:=crArrow;{$endif}
 
   RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
+
 end;
 
 procedure TTreeListView.SetFocused(const AValue: TTreeListItem);
@@ -2345,6 +2347,7 @@ begin
       F_SearchBar.Controls[i].Cursor:=crIBeam;{$endif}
 
   UpdateScrollBarPos;
+ // SetWindowLong(handle,GWL_STYLE,GetWindowLong(handle,GWL_STYLE) or WS_CLIPCHILDREN);
 end;
 
 procedure TTreeListView.setImageList(const images:TImageList);
@@ -2740,6 +2743,7 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
           LM_MOUSEWHEEL = WM_MOUSEWHEEL;
           LM_MOUSEMOVE = WM_MOUSEMOVE;
           LM_LBUTTONDOWN = WM_LBUTTONDOWN;
+          LM_RBUTTONDOWN = WM_RBUTTONDOWN;
           LM_LBUTTONUP = WM_LBUTTONUP;
           LM_RBUTTONUP = WM_RBUTTONUP;
           LM_KEYDOWN = WM_KEYDOWN;
@@ -2934,20 +2938,6 @@ begin
                       internPaint;
                       inherited;
                     end;
-    LM_PAINT:       begin
-                      if tlioDeleting in InternOptions_tlio then begin
-                        inherited;
-                        exit;
-                      end;
-                      include(InternOptions_tlio,tlioDisablePainting);
-                      try
-                        inherited;
-                      finally
-                        exclude(InternOptions_tlio,tlioDisablePainting);
-                      end;
-                      internPaint;
-                    end;
-
     LM_ERASEBKGND: message.Result:=1;
     LM_KEYUP:
       if (TLMKeyUp(message).CharCode = VK_APPS) and assigned(PopupMenu) then begin
@@ -3001,18 +2991,12 @@ var i,ypos,xpos:integer;
     outRect: Trect;
     newWidth, newHeight: longint;
 begin
-  //if (tlioUpdating in InternOptions_tlio) then exit;
-  //windows.Beep(1000,100);
   if (tlioUpdating in InternOptions_tlio) or
      (tlioDisablePainting in InternOptions_tlio) or
      (tlioDeleting in InternOptions_tlio) or
      (f_items=nil) or (f_items.freeing) or
      (RedrawBlock>0) then exit;
 
-
-//  windows.Beep(1000,100);
-  //F_VScroll.Repaint;
-  //F_HScroll.Repaint;
   {$IFDEF allowHeaderDragging}
     for i:=0 to F_Header.Sections.Count-1 do
       if F_Header.Sections[i].OriginalIndex=0 then begin
@@ -3105,6 +3089,8 @@ end;
 procedure TTreeListView.Paint;
 begin
   internPaint;
+  if F_SearchBar<>nil then
+    F_SearchBar.Invalidate
 end;
 
 //Destroy

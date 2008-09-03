@@ -17,7 +17,7 @@ interface
 
 uses
   Classes, SysUtils, StdCtrls, ExtCtrls, Controls,Buttons,Graphics
-  {$ifdef lcl},LCLType,LCLIntf{$else},windows{$endif};
+  {$ifdef lcl},LCLType,LCLIntf{$else},windows,messages{$endif};
 
 type
 TFindState = set of (fsFound, fsLoopAround);
@@ -101,8 +101,8 @@ public
   property SearchLocations: TStrings read GetSearchLocations; //**<ComboBox-items
   property Highlighting: boolean read GetHighlighting; //**<State of the highlight all button
   property FindState: TFindState read FFindState write SetFindState; //**< Set this to the result of the search operation
-  procedure setFocus;override;//**< focuses the search text edit
-  constructor create(TheOwner: TComponent);override;
+  procedure SetFocus;override;//**< focuses the search text edit
+  constructor Create(TheOwner: TComponent);override;
 published
   property OnSearch: TSearchEvent read FOnSearch write FOnSearch; //**<This is called when the text should be searched, e.g. when the user clicks the buttons or types in the edit control
   property OnClose: TNotifyEvent read FOnClose write FOnClose; //**< This is called when the search bar is closed (close button, or escape key)
@@ -363,9 +363,9 @@ begin
 end;
 
 
-constructor TSearchBar.create(TheOwner: TComponent);
+constructor TSearchBar.Create(TheOwner: TComponent);
 begin
-  inherited create(TheOwner);
+  inherited Create(TheOwner);
   Align:=alBottom;
   FsearchBackwardText:='&Previous';
   FSearchForwardText:='&Next';
@@ -379,6 +379,12 @@ begin
   FHighlighting:=false;
   FFoundColor:=$77DD77;
   FNotFoundColor:=rgb($DD,$77,$77);
+  {$ifdef delphi}
+    {$ifndef VER100}{$ifndef VER120}{$ifndef VER130}{$ifndef VER140} //delphi 7 or higher
+    ControlStyle := controlstyle  - [csparentbackground];
+    {$endif}{$endif}{$endif}{$endif}
+  {$endif}
+
 end;
 
 end.
