@@ -8,7 +8,7 @@ unit treelistviewexampleu;
 interface
 
 uses
-  Classes, SysUtils,Forms,TreeListView,StdCtrls,Controls,Graphics;
+  Classes, SysUtils,Forms,TreeListView,StdCtrls,Controls,Graphics,menus;
 
 
 
@@ -75,6 +75,8 @@ constructor TExampleForm.create(TheOwner: TComponent);
 //create form dynamically to support Delphi and Larazus
 var i:longint;
     bmp:TBitmap;
+    pmenu: TPopupMenu;
+    mi: TMenuItem;
 begin
   inherited {$ifndef fpc}createnew(theOwner){$endif};
   width:=640;
@@ -107,7 +109,6 @@ begin
   TreeListView1.OnItemCollapsed:=TLCollapsed;
   TreeListView1.OnSelect:=TLSelect;
   TreeListView1.OnClickAtRecordItem:=TLClickRecordItem;
-  TreeListView1.Sorted:=true;
 
 
   TreeListView1.Columns.clear;
@@ -131,14 +132,13 @@ begin
     Width:=100;
     Alignment:=taCenter;
   end;
+  TreeListView1.Options:=TreeListView1.Options + [tlvoMultiSelect,tlvoHotTrackRecordTextItems,tlvoSorted];
   {$ifdef lcl}
-  TreeListView1.ColumnsDragable:=true;
+  TreeListView1.Options:=TreeListView1.Options + [tlvoColumnsDragable];
   TreeListView1.createUserColumnVisibilityPopupMenu();
   {$endif}
   TreeListView1.HorizontalLineMode:=lmSolid;
   TreeListView1.VerticalLineMode:=lmDot;
-  TreeListView1.multiSelect:=true;
-  TreeListView1.HotTrackSubTextItems:=true;
   TreeListView1.BeginUpdate;
   with TreeListView1.Items.Add do begin
     Text:='Hallo';
@@ -189,7 +189,10 @@ begin
      end;
    end;
    TreeListView1.EndUpdate;
-
+   pmenu:=TPopupMenu.create(self);
+   mi:=TMenuItem.create(self);mi.Caption:='does nothing';
+   pmenu.items.add(mi);
+   TreeListView1.popupmenu:=pmenu;
    TreeListView1.createSearchBar();
    visible:=true;
    onclose:=FormClose;
