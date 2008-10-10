@@ -18,8 +18,8 @@ unit TreeListView;
 {$endif}
 
 {$ifdef lcl}
-  {$define allowHeaderDragging}  //this needs at least lazarus 9.25 Beta(SVN)
-  {$define allowHeaderVisible}   //this needs the patch from bugs.freepascal.org/view.php?id=11727 (in 9.25)
+  {$define allowHeaderDragging}  //this needs at least lazarus 9.26
+  {$define allowHeaderVisible}   //this needs at least lazarus 9.27 (SVN, r16817)
 {$endif}
 interface
 
