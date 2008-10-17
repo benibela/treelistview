@@ -287,7 +287,7 @@ var cx:longint;
         result:=true;
       end;
       control.Visible:=true;
-      TControlCracker(control).Caption:=cap;
+      {$ifndef lcl}TControlCracker({$else}(control).Caption:=cap;{$endif}
       control.Left:=cx;
       if wid<>-1 then control.Width:=wid;
       cx:=cx+control.Width+HSPACING;

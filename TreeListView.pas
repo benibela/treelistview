@@ -21,6 +21,7 @@ unit TreeListView;
   {$define allowHeaderDragging}  //this needs at least lazarus 9.26
   {$define allowHeaderVisible}   //this needs at least lazarus 9.27 (SVN, r16817)
 {$endif}
+{$ifdef lcl}{$define openOwnPopupMenu}{$endif} //disable if you get 2 popupmenus (it is necessary in some lcl versions)
 interface
 
 uses
@@ -1777,13 +1778,14 @@ end;
 
 //Create
 constructor TTreeListView.Create(aowner:TComponent);
+var temp:tbitmap;
 begin
   inherited;
   F_Items:=TTreeListItems.Create(nil,self);
   F_Items.OnChange:=_GeneralEvent;
   F_Items.freeing:=false;
 
-F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
+  F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
 
   doubleBuffer:=graphics.TBitmap.Create;
 
@@ -1848,9 +1850,15 @@ F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
   F_Header.Left:=0;
   F_Header.Width:=10000;
   {$ifdef fpc}
-  if font.Height=0 then
-    F_Header.Height:=13+2*GetSystemMetrics(SM_CYEDGE)
-   else
+  if font.Height=0 then begin
+    temp:=tbitmap.create;
+    temp.canvas.font.Assign(font);
+    temp.canvas.TextOut(0,0,'a');
+    F_Header.Height:=temp.canvas.TextHeight('ABC,')+2*GetSystemMetrics(SM_CYEDGE);
+    temp.free;
+
+    //F_Header.Height:=13+2*GetSystemMetrics(SM_CYEDGE)
+   end else
     F_Header.Height:=abs(font.height)+2*GetSystemMetrics(SM_CYEDGE);
   {$endif}
   F_Header.OnSectionTrack:=_HeaderSectionTrack;
@@ -1882,6 +1890,8 @@ F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
   F_HScroll.TabStop:=false;
 
   RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
+  if font.Height>RowHeight then RowHeight:=font.Height+1;
+  //if font.GetTextHeight('ÂB,')>RowHeight then RowHeight:=font.GetTextHeight('ÂB,')+1;
 
 end;
 
@@ -2749,7 +2759,7 @@ begin
   if i-1>F_VScroll.Min then begin
     //F_VScroll.Enabled:=false;
     F_VScroll.Enabled:=true;
-    F_VScroll.Max:=i{$ifdef lcl}-1{$else}+VisibleRowCount{$endif};
+    F_VScroll.Max:=i-1+VisibleRowCount;
     F_VScroll.PageSize:=VisibleRowCount;
     F_VScroll.LargeChange:=VisibleRowCount;
   end else if F_VScroll.Enabled then begin
@@ -2915,10 +2925,11 @@ begin
             if tempRecordItem<>nil then OnClickAtRecordItem(self,F_ClickedItem,tempRecordItem);
           end;
         end;
-      end;{ else if message.msg=LM_RBUTTONUP then begin
+      end {$ifdef openOwnPopupMenu} else if message.msg=LM_RBUTTONUP then begin
         GetCursorPos(cursorPos);
         if assigned(PopupMenu) then PopupMenu.PopUp(cursorPos.x,cursorPos.Y);
-      end; }
+
+      end{$endif};
       inherited;
     end;
     LM_KEYDOWN: begin
