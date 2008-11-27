@@ -3165,7 +3165,7 @@ begin
   F_Header.free;
   F_Items.free;
   DoubleBuffer.Free;
-
+  F_SearchBar.free;F_SearchBar:=nil;
   inherited;
 end;
 procedure Register;

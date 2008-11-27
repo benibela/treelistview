@@ -103,6 +103,7 @@ public
   property FindState: TFindState read FFindState write SetFindState; //**< Set this to the result of the search operation
   procedure SetFocus;override;//**< focuses the search text edit
   constructor Create(TheOwner: TComponent);override;
+  destructor destroy();override;
 published
   property OnSearch: TSearchEvent read FOnSearch write FOnSearch; //**<This is called when the text should be searched, e.g. when the user clicks the buttons or types in the edit control
   property OnClose: TNotifyEvent read FOnClose write FOnClose; //**< This is called when the search bar is closed (close button, or escape key)
@@ -291,7 +292,7 @@ var cx:longint;
       control.Left:=cx;
       if wid<>-1 then control.Width:=wid;
       cx:=cx+control.Width+HSPACING;
-    end else begin
+    end else if control<>nil then begin
       control.free;
       control:=nil;
     end;
@@ -385,6 +386,19 @@ begin
     {$endif}{$endif}{$endif}{$endif}
   {$endif}
 
+end;
+
+destructor TSearchBar.destroy();
+begin
+  closeBtn.free;
+  searchForwardBtn.free;
+  searchBackwardBtn.free;
+  highlightBtn.free;
+  captionLbl.free;
+  statusLabel.free;
+  locationsCmb.free;
+  searchEdt.free;
+  inherited destroy();
 end;
 
 end.
