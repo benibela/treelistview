@@ -18,8 +18,7 @@ type
 
 TExampleForm= class(TCustomForm)
 
-  procedure TLClickRecordItem(sender: TObject; parentItem: TTreeListItem;
-    item: TTreeListRecordItem);
+  procedure TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
   procedure TLCollapsed(sender: TObject; item: TTreeListItem);
   procedure TLExpanded(sender: TObject; item: TTreeListItem);
   procedure TLSelect(sender: TObject; item: TTreeListItem);
@@ -50,10 +49,9 @@ begin
   running:=false;
   Application.Terminate;
 end;
-procedure TExampleForm.TLClickRecordItem(sender: TObject;
-  parentItem: TTreeListItem; item: TTreeListRecordItem);
+procedure TExampleForm.TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
 begin
-  Caption:=parentItem.Text + ' clicked on: '+item.Text;
+  Caption:=item.parent.Text + ' clicked on: '+item.Text;
 end;
 
 procedure TExampleForm.TLCollapsed(sender: TObject; item: TTreeListItem);

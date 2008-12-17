@@ -2,10 +2,12 @@
 <CONFIG>
   <ProjectOptions>
     <PathDelim Value="\"/>
-    <Version Value="6"/>
+    <Version Value="7"/>
     <General>
+      <Flags>
+        <LRSInOutputDirectory Value="False"/>
+      </Flags>
       <MainUnit Value="0"/>
-      <IconPath Value="./"/>
       <TargetFileExt Value=".exe"/>
       <ActiveEditorIndexAtStart Value="4"/>
     </General>
@@ -26,7 +28,7 @@
         <LaunchingApplication PathPlusParams="/usr/X11R6/bin/xterm -T 'Lazarus Run Output' -e $(LazarusDir)/tools/runwait.sh $(TargetCmdLine)"/>
       </local>
     </RunParams>
-    <Units Count="32">
+    <Units Count="33">
       <Unit0>
         <Filename Value="treelistviewexample.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -34,34 +36,33 @@
         <CursorPos X="64" Y="1"/>
         <TopLine Value="1"/>
         <EditorIndex Value="0"/>
-        <UsageCount Value="48"/>
+        <UsageCount Value="74"/>
         <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="treelistviewexampleu.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="treelistviewexampleu"/>
-        <CursorPos X="23" Y="133"/>
-        <TopLine Value="113"/>
+        <CursorPos X="35" Y="11"/>
+        <TopLine Value="10"/>
         <EditorIndex Value="3"/>
-        <UsageCount Value="48"/>
+        <UsageCount Value="74"/>
         <Loaded Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\TreeListView.pas"/>
         <UnitName Value="TreeListView"/>
-        <CursorPos X="29" Y="2553"/>
-        <TopLine Value="2534"/>
+        <CursorPos X="76" Y="2875"/>
+        <TopLine Value="2966"/>
         <EditorIndex Value="4"/>
-        <UsageCount Value="21"/>
-        <Bookmarks Count="7">
-          <Item0 X="83" Y="507" ID="1"/>
-          <Item1 X="1" Y="565" ID="2"/>
-          <Item2 X="3" Y="2202" ID="3"/>
-          <Item3 X="22" Y="572" ID="6"/>
-          <Item4 X="8" Y="2484" ID="7"/>
-          <Item5 X="36" Y="2803" ID="8"/>
-          <Item6 X="110" Y="2852" ID="9"/>
+        <UsageCount Value="34"/>
+        <Bookmarks Count="6">
+          <Item0 X="10" Y="2915" ID="1"/>
+          <Item1 X="24" Y="2936" ID="2"/>
+          <Item2 X="29" Y="2988" ID="6"/>
+          <Item3 X="79" Y="2985" ID="7"/>
+          <Item4 X="19" Y="3289" ID="8"/>
+          <Item5 X="110" Y="3376" ID="9"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit2>
@@ -76,7 +77,7 @@
         <CursorPos X="1" Y="1740"/>
         <TopLine Value="1723"/>
         <EditorIndex Value="1"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="34"/>
         <Loaded Value="True"/>
       </Unit4>
       <Unit5>
@@ -85,19 +86,16 @@
         <CursorPos X="1" Y="116"/>
         <TopLine Value="99"/>
         <EditorIndex Value="2"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="34"/>
         <Loaded Value="True"/>
       </Unit5>
       <Unit6>
         <Filename Value="..\findControl.pas"/>
         <UnitName Value="findControl"/>
-        <CursorPos X="56" Y="5"/>
-        <TopLine Value="1"/>
-        <EditorIndex Value="13"/>
-        <UsageCount Value="18"/>
-        <Bookmarks Count="1">
-          <Item0 X="135" Y="25" ID="4"/>
-        </Bookmarks>
+        <CursorPos X="1" Y="405"/>
+        <TopLine Value="372"/>
+        <EditorIndex Value="14"/>
+        <UsageCount Value="31"/>
         <Loaded Value="True"/>
       </Unit6>
       <Unit7>
@@ -112,41 +110,41 @@
         <UnitName Value="ImgList"/>
         <CursorPos X="15" Y="183"/>
         <TopLine Value="166"/>
-        <EditorIndex Value="24"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="25"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="P:\programming\lazarus\lcl\include\imglist.inc"/>
         <CursorPos X="41" Y="71"/>
         <TopLine Value="63"/>
-        <EditorIndex Value="25"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="26"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
       </Unit9>
       <Unit10>
         <Filename Value="P:\programming\lazarus\lcl\controls.pp"/>
         <UnitName Value="Controls"/>
-        <CursorPos X="40" Y="1728"/>
-        <TopLine Value="1712"/>
-        <EditorIndex Value="19"/>
-        <UsageCount Value="20"/>
+        <CursorPos X="32" Y="1312"/>
+        <TopLine Value="1295"/>
+        <EditorIndex Value="20"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
       </Unit10>
       <Unit11>
         <Filename Value="P:\programming\lazarus\lcl\include\winapih.inc"/>
-        <CursorPos X="10" Y="195"/>
-        <TopLine Value="178"/>
-        <EditorIndex Value="22"/>
-        <UsageCount Value="19"/>
+        <CursorPos X="10" Y="85"/>
+        <TopLine Value="68"/>
+        <EditorIndex Value="23"/>
+        <UsageCount Value="32"/>
         <Loaded Value="True"/>
       </Unit11>
       <Unit12>
         <Filename Value="P:\programming\lazarus\lcl\include\wincontrol.inc"/>
         <CursorPos X="1" Y="4750"/>
         <TopLine Value="4733"/>
-        <EditorIndex Value="20"/>
-        <UsageCount Value="19"/>
+        <EditorIndex Value="21"/>
+        <UsageCount Value="32"/>
         <Loaded Value="True"/>
       </Unit12>
       <Unit13>
@@ -165,49 +163,49 @@
         <Filename Value="P:\programming\lazarus\fpc\2.2.1\source\rtl\objpas\classes\classesh.inc"/>
         <CursorPos X="15" Y="364"/>
         <TopLine Value="347"/>
-        <EditorIndex Value="17"/>
-        <UsageCount Value="18"/>
+        <EditorIndex Value="18"/>
+        <UsageCount Value="31"/>
         <Loaded Value="True"/>
       </Unit15>
       <Unit16>
         <Filename Value="P:\programming\lazarus\fpc\2.2.1\source\rtl\objpas\classes\persist.inc"/>
         <CursorPos X="3" Y="62"/>
         <TopLine Value="59"/>
-        <EditorIndex Value="18"/>
-        <UsageCount Value="18"/>
+        <EditorIndex Value="19"/>
+        <UsageCount Value="31"/>
         <Loaded Value="True"/>
       </Unit16>
       <Unit17>
         <Filename Value="P:\programming\lazarus\lcl\graphics.pp"/>
         <UnitName Value="Graphics"/>
-        <CursorPos X="15" Y="962"/>
-        <TopLine Value="945"/>
-        <EditorIndex Value="15"/>
-        <UsageCount Value="17"/>
+        <CursorPos X="15" Y="1061"/>
+        <TopLine Value="1044"/>
+        <EditorIndex Value="16"/>
+        <UsageCount Value="30"/>
         <Loaded Value="True"/>
       </Unit17>
       <Unit18>
         <Filename Value="P:\programming\lazarus\lcl\include\canvas.inc"/>
-        <CursorPos X="3" Y="1593"/>
-        <TopLine Value="1589"/>
-        <EditorIndex Value="16"/>
-        <UsageCount Value="17"/>
+        <CursorPos X="23" Y="42"/>
+        <TopLine Value="35"/>
+        <EditorIndex Value="17"/>
+        <UsageCount Value="30"/>
         <Loaded Value="True"/>
       </Unit18>
       <Unit19>
         <Filename Value="P:\programming\lazarus\lcl\include\intfbasewinapi.inc"/>
-        <CursorPos X="3" Y="860"/>
-        <TopLine Value="857"/>
-        <EditorIndex Value="23"/>
-        <UsageCount Value="16"/>
+        <CursorPos X="3" Y="273"/>
+        <TopLine Value="271"/>
+        <EditorIndex Value="24"/>
+        <UsageCount Value="29"/>
         <Loaded Value="True"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\compiledoc.bat"/>
         <CursorPos X="71" Y="1"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="14"/>
-        <UsageCount Value="16"/>
+        <EditorIndex Value="15"/>
+        <UsageCount Value="29"/>
         <Loaded Value="True"/>
         <SyntaxHighlighter Value="None"/>
       </Unit20>
@@ -216,8 +214,8 @@
         <UnitName Value="LMessages"/>
         <CursorPos X="14" Y="193"/>
         <TopLine Value="177"/>
-        <EditorIndex Value="12"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="13"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit21>
       <Unit22>
@@ -225,16 +223,16 @@
         <UnitName Value="messages"/>
         <CursorPos X="10" Y="11"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="10"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="11"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit22>
       <Unit23>
         <Filename Value="P:\programming\lazarus\fpc\2.2.1\source\rtl\win\wininc\messages.inc"/>
         <CursorPos X="1" Y="1"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="11"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="12"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit23>
       <Unit24>
@@ -242,8 +240,8 @@
         <UnitName Value="extendedhtmlparser"/>
         <CursorPos X="33" Y="12"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="7"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="8"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit24>
       <Unit25>
@@ -251,8 +249,8 @@
         <UnitName Value="simplehtmlparser"/>
         <CursorPos X="39" Y="12"/>
         <TopLine Value="12"/>
-        <EditorIndex Value="9"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="10"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit25>
       <Unit26>
@@ -267,8 +265,8 @@
         <UnitName Value="simplexmlparser"/>
         <CursorPos X="3" Y="5"/>
         <TopLine Value="1"/>
-        <EditorIndex Value="8"/>
-        <UsageCount Value="15"/>
+        <EditorIndex Value="9"/>
+        <UsageCount Value="28"/>
         <Loaded Value="True"/>
       </Unit27>
       <Unit28>
@@ -283,147 +281,155 @@
         <Filename Value="P:\programming\lazarus\lcl\include\control.inc"/>
         <CursorPos X="1" Y="1584"/>
         <TopLine Value="1567"/>
-        <EditorIndex Value="21"/>
-        <UsageCount Value="11"/>
+        <EditorIndex Value="22"/>
+        <UsageCount Value="24"/>
         <Loaded Value="True"/>
       </Unit29>
       <Unit30>
         <Filename Value="P:\programming\lazarus\fpc\2.2.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
         <CursorPos X="10" Y="77"/>
         <TopLine Value="58"/>
-        <EditorIndex Value="5"/>
-        <UsageCount Value="10"/>
+        <EditorIndex Value="6"/>
+        <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit30>
       <Unit31>
         <Filename Value="P:\programming\lazarus\fpc\2.2.2\source\rtl\objpas\sysutils\sysstr.inc"/>
         <CursorPos X="3" Y="212"/>
         <TopLine Value="212"/>
-        <EditorIndex Value="6"/>
-        <UsageCount Value="10"/>
+        <EditorIndex Value="7"/>
+        <UsageCount Value="23"/>
         <Loaded Value="True"/>
       </Unit31>
+      <Unit32>
+        <Filename Value="P:\programming\lazarus\lcl\include\rasterimage.inc"/>
+        <CursorPos X="10" Y="501"/>
+        <TopLine Value="491"/>
+        <EditorIndex Value="5"/>
+        <UsageCount Value="16"/>
+        <Loaded Value="True"/>
+      </Unit32>
     </Units>
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2152" Column="1" TopLine="2131"/>
+        <Caret Line="2532" Column="5" TopLine="2515"/>
       </Position1>
       <Position2>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2142" Column="1" TopLine="2121"/>
+        <Caret Line="2541" Column="19" TopLine="2515"/>
       </Position2>
       <Position3>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2148" Column="1" TopLine="2127"/>
+        <Caret Line="2876" Column="38" TopLine="2859"/>
       </Position3>
       <Position4>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2143" Column="1" TopLine="2120"/>
+        <Caret Line="2916" Column="63" TopLine="2898"/>
       </Position4>
       <Position5>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="584" Column="102" TopLine="565"/>
+        <Caret Line="3324" Column="93" TopLine="3301"/>
       </Position5>
       <Position6>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2620" Column="4" TopLine="2588"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position6>
       <Position7>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="507" Column="83" TopLine="488"/>
+        <Caret Line="412" Column="19" TopLine="395"/>
       </Position7>
       <Position8>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Caret Line="2924" Column="58" TopLine="2909"/>
       </Position8>
       <Position9>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="61" Column="40" TopLine="42"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position9>
       <Position10>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="98" Column="19" TopLine="79"/>
+        <Caret Line="1924" Column="68" TopLine="1907"/>
       </Position10>
       <Position11>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="283" Column="245" TopLine="264"/>
+        <Caret Line="1926" Column="68" TopLine="1907"/>
       </Position11>
       <Position12>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="299" Column="90" TopLine="280"/>
+        <Caret Line="1949" Column="61" TopLine="1932"/>
       </Position12>
       <Position13>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="333" Column="11" TopLine="314"/>
+        <Caret Line="1959" Column="34" TopLine="1932"/>
       </Position13>
       <Position14>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="334" Column="11" TopLine="315"/>
+        <Caret Line="2130" Column="64" TopLine="2113"/>
       </Position14>
       <Position15>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="336" Column="33" TopLine="317"/>
+        <Caret Line="2215" Column="55" TopLine="2198"/>
       </Position15>
       <Position16>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="412" Column="18" TopLine="393"/>
+        <Caret Line="2216" Column="78" TopLine="2198"/>
       </Position16>
       <Position17>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="449" Column="22" TopLine="430"/>
+        <Caret Line="2842" Column="23" TopLine="2825"/>
       </Position17>
       <Position18>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="492" Column="108" TopLine="473"/>
+        <Caret Line="2910" Column="47" TopLine="2893"/>
       </Position18>
       <Position19>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="507" Column="72" TopLine="488"/>
+        <Caret Line="2924" Column="76" TopLine="2893"/>
       </Position19>
       <Position20>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="583" Column="170" TopLine="564"/>
+        <Caret Line="2982" Column="138" TopLine="2965"/>
       </Position20>
       <Position21>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2136" Column="15" TopLine="2133"/>
+        <Caret Line="3185" Column="49" TopLine="3168"/>
       </Position21>
       <Position22>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2542" Column="14" TopLine="2534"/>
+        <Caret Line="3311" Column="36" TopLine="3294"/>
       </Position22>
       <Position23>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2568" Column="53" TopLine="2555"/>
+        <Caret Line="3324" Column="114" TopLine="3294"/>
       </Position23>
       <Position24>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2545" Column="1" TopLine="2526"/>
+        <Caret Line="3325" Column="114" TopLine="3294"/>
       </Position24>
       <Position25>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2546" Column="1" TopLine="2527"/>
+        <Caret Line="477" Column="1" TopLine="477"/>
       </Position25>
       <Position26>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2547" Column="1" TopLine="2528"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
       </Position26>
       <Position27>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2549" Column="1" TopLine="2530"/>
+        <Caret Line="356" Column="53" TopLine="330"/>
       </Position27>
       <Position28>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2550" Column="1" TopLine="2531"/>
+        <Caret Line="500" Column="25" TopLine="483"/>
       </Position28>
       <Position29>
-        <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2551" Column="1" TopLine="2532"/>
+        <Filename Value="treelistviewexampleu.pas"/>
+        <Caret Line="133" Column="4" TopLine="116"/>
       </Position29>
       <Position30>
         <Filename Value="..\TreeListView.pas"/>
-        <Caret Line="2552" Column="1" TopLine="2533"/>
+        <Caret Line="2879" Column="2" TopLine="2857"/>
       </Position30>
     </JumpHistory>
   </ProjectOptions>
