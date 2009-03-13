@@ -3,8 +3,6 @@
   ListView. This means that you can organize the items in a tree and show
   additional information in columns.
 
-  $Revision$
-  @lastmod $Date$
   @author Benito van der Zander (http://www.benibela.de)
   @author Thanks to: Bruce Christensen
 }

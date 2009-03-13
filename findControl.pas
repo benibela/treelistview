@@ -2,8 +2,6 @@
   This unit contains the class TSearchBar which implements a Mozilla like
   search bar.
 
-  $Revision$
-  @lastmod $Date$
   @author Benito van der Zander (http://www.benibela.de)
 *)
 unit findControl;
