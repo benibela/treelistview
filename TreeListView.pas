@@ -250,7 +250,6 @@ type
 
       //**This draws the item @br Don't call it direct
       //**@param hierarchyStack list of parents
-      //**@param y position
       procedure Paint(const hierarchyStack: TItemHierarchyStack);
 
       //**Destroy
@@ -382,6 +381,8 @@ type
     F_RootLines:TLineMode;
     F_RootLineColor:TColor;
 
+    //Events
+
     //Headerevents
     {$ifdef FPC}
     F_HeaderSectionResize:TCustomSectionNotifyEvent;
@@ -390,7 +391,6 @@ type
     F_HeaderSectionResize:TSectionNotifyEvent;
     F_HeaderSectionTrack:TSectionTrackEvent;
     {$endif}
-    //Events
 
     //Scrollbarevents
     F_VScrollBarChange:TNotifyEvent;
@@ -561,9 +561,9 @@ type
     property TopPos:integer read GetTopPos; //**< V-Scrollposition calculated in pixels (=position of Items[0])
     property TopItem: TTreeListItem read GetTopItem write SetTopItem; //**< Visible item with the least real index (can be nil)
     property TopItemIsEvenItem: boolean read GetTopItemEven; //**< Is the top item even (used for striping)
-    property DrawingEvenItem: boolean read F_DrawingEvenItem; //**< Is the currently drawn item even (only valid during custom draw events)
-    property DrawingYPos: longint read F_DrawingYPos; //**< Y-Position of the currently drawn item(only valid during custom draw events)
-    property DrawingRecordItemRect: TRect read F_DrawingRecordItemRect; //**< boundaries of the currently drawn record item(only valid during custom draw events)
+    property DrawingEvenItem: boolean read F_DrawingEvenItem; //**< Is the currently drawn item even (only valid during custom draw events, having this as property prevents parameter cluttering)
+    property DrawingYPos: longint read F_DrawingYPos; //**< Y-Position of the currently drawn item (only valid during custom draw events, having this as property prevents parameter cluttering)
+    property DrawingRecordItemRect: TRect read F_DrawingRecordItemRect; //**< boundaries of the currently drawn record item (only valid during custom draw events, having this as property prevents parameter cluttering)
   published
     { Published-Deklarationen }
     {-------------------------------START Ereignisse---------------------------}
@@ -613,7 +613,7 @@ type
 
     //CustomDrawEvents
     property OnCustomBgDraw:TCustomBackgroundDrawEvent read F_CustomBgDraw write F_CustomBgDraw; //**< This is called before/after the items are drawn
-    property OnCustomItemDraw:TCustomItemDrawEvent read F_CustomItemDraw write F_CustomItemDraw; //**< This is called before/after an item is drawn @seealso TTreeListItem.PaintTo
+    property OnCustomItemDraw:TCustomItemDrawEvent read F_CustomItemDraw write F_CustomItemDraw; //**< This is called before/after an item is drawn @seealso TTreeListItem.PaintTo, TTreeListView.DrawingEvenItem, TTreeListView.DrawingYPos, TTreeListView.DrawingRecordItemRect
     property OnCustomRecordItemDraw:TCustomRecordItemDrawEvent read F_CustomRecordItemDraw write F_CustomRecordItemDraw; //**< This is called before/after any record items is drawn
 
     //Inputevents
@@ -2757,7 +2757,9 @@ end;
 
 procedure TTreeListView._HeaderSectionEndDrag(Sender: TObject);
 begin
-  updateAll;
+  UpdateScrollBarPos;
+  UpdateScrollSize;
+  internRepaint;
 end;
 
 procedure TTreeListView._HScrollChange(Sender: TObject);
