@@ -173,6 +173,18 @@ type
       index: longint;
     end;
   end;
+
+  //**can be used to store abitrary 64 bit data in every item (will be removed as soon as the generics are really usable)
+  TItemDataRec = packed record //inspired by int64rec
+     case integer of
+       0 : (i64: int64);
+       1 : (lo32, hi32 : Cardinal);
+       2 : (Words : Array[0..3] of Word);
+       3 : (Bytes : Array[0..7] of Byte);
+       4 : (p : pointer);
+       5 : (obj : TObject);
+  end;
+
   {** @abstract This is an item which can contain subitems and items in the detail columns }
   TTreeListItem=class(TPersistent)
   private
@@ -206,7 +218,7 @@ type
       function GetRecordItemsText(i: Integer): string;
       procedure SetRecordItemsText(i: Integer; const AValue: string);
     public
-      Tag:longint; //**< This value can be used to store arbitrary integer values
+      data:TItemDataRec; //**< This value can be used to store arbitrary integer values
 
       //**This creates an item with given parent and caption in the given TreeListView
       constructor Create(const parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string='');overload;
@@ -1795,6 +1807,7 @@ begin
   F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
 
   doubleBuffer:=graphics.TBitmap.Create;
+  //didn't change anything: DoubleBuffered:=false; //we always use our own double buffer
 
   //Fonts
   F_HotTrackFont:=TFont.Create;
@@ -2915,6 +2928,7 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
          TLMKeyUp = TWMKeyUp;
   {$endif}
 
+  const LM_USER_DEREFFERED_SCROLLING = LM_USER+1025;
 var tempRecordItem:TTreeListRecordItem;
     itemAtPos,nextToFocus: TTreeListItem;
     shiftState: TShiftState;
@@ -2929,6 +2943,9 @@ begin
       {$else}
       F_MouseWheelDelta:=F_MouseWheelDelta+TWMMouseWheel(message).WheelDelta;
       {$endif}
+      PostMessage(self.Handle,LM_USER_DEREFFERED_SCROLLING+100,0,0); //draw only after all wheel messages are processed
+    end;
+    LM_USER_DEREFFERED_SCROLLING+100: begin
       if (F_MouseWheelDelta<=-120) or (F_MouseWheelDelta>=120) then begin
         F_VScroll.Position:=F_VScroll.Position-F_MouseWheelDelta div 120;
         F_MouseWheelDelta:=0;
