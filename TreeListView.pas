@@ -331,6 +331,21 @@ type
       #)
   }
   TTreeListView = class(TCustomControl)
+  private
+    procedure SetBgColor(const AValue: TColor);
+    procedure SetButtonColor(const AValue: TColor);
+    procedure SetColorSearchMark(const AValue: tcolor);
+    procedure SetColorSearchMarkField(const AValue: tcolor);
+    procedure SetExpandMode(const AValue: TExpandMode);
+    procedure SetHorizontalLineColor(const AValue: TColor);
+    procedure SetHorizontalLines(const AValue: TLineMode);
+    procedure SetRootLineColor(const AValue: TColor);
+    procedure SetRootLines(const AValue: TLineMode);
+    procedure SetSelectBackColor(const AValue: TColor);
+    procedure SetStripedEvenColor(const AValue: TColor);
+    procedure SetStripedOddColor(const AValue: TColor);
+    procedure SetVerticalLineColor(const AValue: TColor);
+    procedure SetVerticalLines(const AValue: TLineMode);
   protected
     { Protected-Deklarationen}
     InternOptions_tlio:TTreeListInternOptions;
@@ -339,7 +354,8 @@ type
 
     f_RedrawBlock: longint;
     f_invalidatedItems: TList;
-    f_invalidateAll,f_bufferComplete: boolean;
+    f_invalidateAll: boolean;
+    f_bufferComplete: boolean; //**< This is true if the buffer contains the recent state of all items (= the last drawing was called with f_invalidateAll)
 
     TreeColumnIndentation:integer;
     F_TopItem: TTreeListItem;
@@ -417,6 +433,7 @@ type
     F_DrawingEvenItem: boolean;
     F_DrawingYPos: longint;
     F_DrawingRecordItemRect: TRect;
+    F_SheduledRepaint: DWord;
 
     //Inputevents
     F_RealClickPos, F_RealMousePos: TPoint;
@@ -518,10 +535,13 @@ type
     property Selected:TTreeListItem read F_Focused write SetSelected; //**<This is the same as Focused, but setting this property will select the item and deselect every other one
     property SortColumn: longint read F_SortColumn write SetSortColumn; //**<Column currently used for sorting
 
+    procedure UpdateScrollSizeH; //**<@deprecated Recalculates the necessary scrollbar properties @br Normally you don't need to call this
+    procedure UpdateScrollSizeV; //**<@deprecated Recalculates the necessary scrollbar properties @br Normally you don't need to call this
     procedure UpdateScrollSize; //**<@deprecated Recalculates the necessary scrollbar properties @br Normally you don't need to call this
 
     //**Create
     constructor Create(aowner:TComponent);override;
+    procedure loaded;override;
 
     function GetItemAtPos(const y:integer):TTreeListItem;//**<Returns the item at position y
     function GetRecordItemAtPos(const x,y:integer):TTreeListRecordItem;//**<Returns the record item at position x,y @br Notice that it doesn't check for visibility, e.g you can use negative coordinates or find items hidden by the scrollbars
@@ -559,12 +579,28 @@ type
 
     procedure WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage{$endif});override;
 
-    //this draws all elements
+    //elements drawing
+    //**This method will soon repaint all items.
+    //**This means as soon as the calling functions finished (= returns to the application message loop) and all pending messages are processed, internRepaint will be called
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(invalidateAll) @seealso(invalidateItem) @seealso(performSheduleInternRepaint)
+    procedure sheduleInternRepaint();
+    //**This method forces a redraw of all items (=invalidateAll and internPaint)
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
     procedure internRepaint();
+    //**This invalidates the passed item, so that it will be redrawn if the next painting occurs
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll)
     procedure invalidateItem(item: TTreeListItem=nil);
+    //**This invalidates all items, so the whole control will be redrawn if next painting occurs
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateItem)
     procedure invalidateAll();
-    procedure internDraw();//drawn on the double buffer
+    //**This method draws all changed (=invalidated) items in the double buffer. There should never be a reason to call this
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
+    procedure internDraw();
+    //**This method will paint all changed items on the screen. This means it will call internDraw to draw all changed item in the double buffer and then copy the changed areas of the double buffer on the screen
+    //**@seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
     procedure internPaint;//shows the changes
+    //**This is the normal Delphi/Lazarus painting routine called when a paint message is received. You should call it seldom.
+    //**@seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
     procedure Paint;override;
 
     //Destroy
@@ -589,28 +625,28 @@ type
 
     property Images:TImageList read F_ImageList write setImageList; //**< ImageList used to get the images for items using the TTreeListView.ImageIndex property
 
-    property HorizontalLineMode:TLineMode read F_HorizontalLines write F_HorizontalLines; //**< Determines  how/if lines are drawn between the items
-    property HorizontalLineColor:TColor read F_HorizontalLineColor write F_HorizontalLineColor;
-    property VerticalLineMode:TLineMode read F_VerticalLines write F_VerticalLines; //**< Determines  how/if lines are drawn between the columns
-    property VerticalLineColor:TColor read F_VerticalLineColor write F_VerticalLineColor;
-    property RootLineMode:TLineMode read F_RootLines write F_RootLines; //**< Determines  how/if lines are drawn to connect the tree items
-    property RootLineColor:TColor read F_RootLineColor write F_RootLineColor;
-    property ColorSearchMark: tcolor read F_ColorSearchMark write F_ColorSearchMark;
-    property ColorSearchMarkField: tcolor read F_ColorSearchMarkField write F_ColorSearchMarkField;
+    property HorizontalLineMode:TLineMode read F_HorizontalLines write SetHorizontalLines; //**< Determines  how/if lines are drawn between the items
+    property HorizontalLineColor:TColor read F_HorizontalLineColor write SetHorizontalLineColor;
+    property VerticalLineMode:TLineMode read F_VerticalLines write SetVerticalLines; //**< Determines  how/if lines are drawn between the columns
+    property VerticalLineColor:TColor read F_VerticalLineColor write SetVerticalLineColor;
+    property RootLineMode:TLineMode read F_RootLines write SetRootLines; //**< Determines  how/if lines are drawn to connect the tree items
+    property RootLineColor:TColor read F_RootLineColor write SetRootLineColor;
+    property ColorSearchMark: tcolor read F_ColorSearchMark write SetColorSearchMark;
+    property ColorSearchMarkField: tcolor read F_ColorSearchMarkField write SetColorSearchMarkField;
 
-    property ExpandMode:TExpandMode read F_ExpandMode write F_ExpandMode; //**< Determines  how/if the user is allowed to collapse/expand items
+    property ExpandMode:TExpandMode read F_ExpandMode write SetExpandMode; //**< Determines  how/if the user is allowed to collapse/expand items
 
     property HotTrackFont:TFont read F_HotTrackFont write SetHotTrackFont;
     property Font;
     property SelectedFont:TFont read F_SelectedFont write SetSelectedFont;
     property SelectedHotTrackFont:TFont read F_SelectedHotTrackFont write SetSelectedHotTrackFont;
 
-    property StripedOddColor:TColor read F_StripedOddColor write F_StripedOddColor;
-    property StripedEvenColor:TColor read F_StripedEvenColor write F_StripedEvenColor;
+    property StripedOddColor:TColor read F_StripedOddColor write SetStripedOddColor;
+    property StripedEvenColor:TColor read F_StripedEvenColor write SetStripedEvenColor;
 
-    property SelectBackColor:TColor read F_SelectBackColor write F_SelectBackColor;
-    property ButtonColor:TColor read F_ButtonColor write F_ButtonColor; //**< Color of the expand/collaps button
-    property BackGroundColor:TColor read F_BgColor write F_BgColor;
+    property SelectBackColor:TColor read F_SelectBackColor write SetSelectBackColor;
+    property ButtonColor:TColor read F_ButtonColor write SetButtonColor; //**< Color of the expand/collaps button
+    property BackGroundColor:TColor read F_BgColor write SetBgColor;
 
     property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to create new ones
 
@@ -645,9 +681,8 @@ type
     {$endif}
 
     //Freigeben (parent properties)
-
-    property BorderWidth;
-    {$ifndef fpc}property BevelWidth;
+    {$ifndef fpc}property BorderWidth; //if you want a border in Lazarus put it in a panel
+    property BevelWidth;
     property BevelEdges;
     property BevelInner default bvLowered;
     property BevelOuter default bvLowered;
@@ -701,10 +736,20 @@ procedure Register;
 
 implementation
 
+{$ifdef lcl}
+uses LResources; //for icon
+{$endif}
+
 const HeaderItemDistance=2; //Distance between Header and first drawn item
       LEFT_TEXT_PADDING=3;
       LINE_DISTANCE=15;
       EXPANDING_BUTTON_WIDTH=9;
+      {$IFDEF lcl}
+      LM_USER_SHEDULED_REPAINT = LM_USER+1126;
+      {$ELSE}
+      LM_USER_SHEDULED_REPAINT = WM_USER+1126;
+      {$ENDIF}
+
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{
 ################################################################################
 ================================================================================
@@ -1651,8 +1696,8 @@ var i,ynew,yold,recordId:integer;
   begin
     tempX:=rec.left;
     if F_TreeListView.RootLineMode <> lmNone then begin
-      //draw vertical item lines (not ending items)
       tempX:=tempX+LINE_DISTANCE div 2+1;
+      //draw vertical item lines (not ending items)
       for i:=0 to hierarchyStack.size-1 do begin
         if tempx>rec.right then break;
         if hierarchyStack.stack[i].index<>hierarchyStack.stack[i].list.Count-1 then //last item on this level
@@ -1797,7 +1842,7 @@ end;
 
 //Create
 constructor TTreeListView.Create(aowner:TComponent);
-var temp:tbitmap;
+{$ifdef fpc}var temp:tbitmap;{$endif}
 begin
   inherited;
   F_Items:=TTreeListItems.Create(nil,self);
@@ -1805,6 +1850,7 @@ begin
   f_invalidateAll:=true;
 
   F_Options:=[tlvoToolTips,tlvoRightMouseSelects,tlvoStriped];
+  ControlStyle:=ControlStyle+[csClickEvents,csFramed,csOpaque,csDoubleClicks];
 
   doubleBuffer:=graphics.TBitmap.Create;
   //didn't change anything: DoubleBuffered:=false; //we always use our own double buffer
@@ -1861,14 +1907,13 @@ begin
   //Headercontrol initialisieren
   F_Header:=THeaderControl.Create(self);
   F_Header.Align:=alNone;
-  F_Header.parent:=Self;
   F_Header.Visible:=true;
   with F_Header.Sections.Add do begin
     Caption:='';
     Width:=1000;
   end;
   F_Header.Left:=0;
-  F_Header.Width:=10000;
+  F_Header.Width:=9999; //this was 10000, however 10000 will crash Lazarus in design mode
   {$ifdef fpc}
   if font.Height=0 then begin
     temp:=tbitmap.create;
@@ -1886,21 +1931,21 @@ begin
   F_Header.OnSectionClick:=_HeaderSectionClick;
   {$ifdef allowHeaderDragging}F_Header.OnSectionSeparatorDblClick:=_HeaderSectionDblClick();
   F_Header.OnSectionEndDrag:=_HeaderSectionEndDrag;{$endif}
+  F_Header.parent:=Self;
 
 
   //Scrollbar initialisieren
   F_VScroll:=TScrollbar.Create(self);
-  F_VScroll.parent:=self;
   F_VScroll.Enabled:=false;
   F_VScroll.Visible:=true;
   F_VScroll.Kind:=sbVertical;
   F_VScroll.OnChange:=_VScrollChange;
   F_VScroll.TabStop:=false;
+  F_VScroll.parent:=self;
 
 
   //Scrollbar initialisieren
   F_HScroll:=TScrollbar.Create(self);
-  F_HScroll.parent:=self;
   F_HScroll.Enabled:=false;
   F_HScroll.Visible:=true;
   F_HScroll.Kind:=sbHorizontal;
@@ -1908,11 +1953,28 @@ begin
   F_HScroll.SmallChange:=5;
   F_HScroll.OnChange:=_HScrollChange;
   F_HScroll.TabStop:=false;
+  F_HScroll.parent:=self;
 
   RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
   if font.Height>RowHeight then RowHeight:=font.Height+1;
   //if font.GetTextHeight('ÂB,')>RowHeight then RowHeight:=font.GetTextHeight('ÂB,')+1;
 
+  if csDesigning in ComponentState then begin
+    BeginUpdate;
+    with items.Add('Constant example tree') do begin
+      SubItems.Add('1').SubItems.add('1.1');
+      SubItems.Add('2').RecordItemsText[1]:='record item';
+      SubItems.Add('3');
+    end;
+    items.Add('More...').SubItems.Add('More...').SubItems.Add('More...');
+    EndUpdate;
+  end;
+end;
+
+procedure TTreeListView.loaded;
+begin
+  inherited loaded;
+  UpdateScrollBarPos;
 end;
 
 procedure TTreeListView.SetFocused(const AValue: TTreeListItem);
@@ -2009,7 +2071,7 @@ end;
 procedure TTreeListView.F_SearchBarHighlightChanged(Sender: TObject);
 begin
   F_HighlightAll:=F_SearchBar.Highlighting;
-  internRepaint;
+  sheduleInternRepaint;
 end;
 
 procedure TTreeListView.SearchBarClose(Sender: TObject);
@@ -2019,7 +2081,7 @@ begin
 end;
 
 procedure TTreeListView.SetOptions(const AValue: TTreeListViewOptions);
-var toAdd,toRemove,changed: TTreeListViewOptions;
+var toAdd,toRemove: TTreeListViewOptions;
     needRepaint: boolean;
 begin
   if F_Options=AValue then exit;
@@ -2063,14 +2125,116 @@ begin
   else SetOptions(F_Options-[Option]);
 end;
 
+procedure TTreeListView.SetBgColor(const AValue: TColor);
+begin
+  if F_BgColor=AValue then exit;
+  F_BgColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetButtonColor(const AValue: TColor);
+begin
+  if F_ButtonColor=AValue then exit;
+  F_ButtonColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetColorSearchMark(const AValue: tcolor);
+begin
+  if f_colorSearchMark=AValue then exit;
+  f_colorSearchMark:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetColorSearchMarkField(const AValue: tcolor);
+begin
+  if f_colorSearchMarkField=AValue then exit;
+  f_colorSearchMarkField:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetExpandMode(const AValue: TExpandMode);
+begin
+  if F_ExpandMode=AValue then exit;
+  F_ExpandMode:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetHorizontalLineColor(const AValue: TColor);
+begin
+  if F_HorizontalLineColor=AValue then exit;
+  F_HorizontalLineColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetHorizontalLines(const AValue: TLineMode);
+begin
+  if F_HorizontalLines=AValue then exit;
+  F_HorizontalLines:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetRootLineColor(const AValue: TColor);
+begin
+  if F_RootLineColor=AValue then exit;
+  F_RootLineColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetRootLines(const AValue: TLineMode);
+begin
+  if F_RootLines=AValue then exit;
+  F_RootLines:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetSelectBackColor(const AValue: TColor);
+begin
+  if F_SelectBackColor=AValue then exit;
+  F_SelectBackColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetStripedEvenColor(const AValue: TColor);
+begin
+  if F_StripedEvenColor=AValue then exit;
+  F_StripedEvenColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetStripedOddColor(const AValue: TColor);
+begin
+  if F_StripedOddColor=AValue then exit;
+  F_StripedOddColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetVerticalLineColor(const AValue: TColor);
+begin
+  if F_VerticalLineColor=AValue then exit;
+  F_VerticalLineColor:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetVerticalLines(const AValue: TLineMode);
+begin
+  if F_VerticalLines=AValue then exit;
+  F_VerticalLines:=AValue;
+  sheduleInternRepaint();
+end;
+
 procedure TTreeListView.SearchBarSearch(sender: TObject; incremental,
   backwards: boolean);
+var searchLocations: TStrings;
+    searchOptions: cardinal;
 begin
   if sender<>F_SearchBar then exit;
   if F_SearchBar.SearchLocation<0 then F_SearchBar.SearchLocation:=0;
-  SearchBar.FindState:= search(F_SearchBar.SearchText,
-                               cardinal(F_SearchBar.SearchLocations.Objects[F_SearchBar.SearchLocation]),
-                               backwards,incremental);
+  searchLocations:=F_SearchBar.SearchLocations;
+  if F_SearchBar.SearchLocation>=searchLocations.count then
+    exit;
+  searchOptions:=cardinal(searchLocations.Objects[F_SearchBar.SearchLocation]);
+  SearchBar.FindState:= search(F_SearchBar.SearchText,searchOptions,backwards,incremental);
 end;
 
 function TTreeListView.DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
@@ -2277,7 +2441,7 @@ begin
 
   if found=nil then begin
     if f_searchMarkVisible or F_HighlightAll then begin
-      internRepaint;
+      sheduleInternRepaint;
       f_searchMarkVisible:=false;
     end;
   end else begin
@@ -2286,7 +2450,7 @@ begin
     textPos:=pos(lowercase(searchFor),lowercase(found.text));
 
     if (F_HighlightAll) or (f_searchMarkVisible and ((found.Parent<>f_searchMarkItem)or(f_searchMarkCol<>column)or(f_searchMarkStart<>textPos))) then
-      internRepaint;
+      sheduleInternRepaint(); //direct repaint, since the search mark will just be drawn over the normal rendering
 
     f_searchMarkItem:=found.F_Parent;
     f_searchMarkCol:=column;
@@ -2295,6 +2459,9 @@ begin
     f_searchMarkVisible:=true;
     if selCount<=1 then selected:=found.F_Parent;
     ensureVisibility(f_searchMarkItem,f_searchMarkCol);
+
+    if F_SheduledRepaint<>0 then //ensure that the current state is displayed. TODO: This is almost the same as internPaint should do, what is better?
+      internRepaint();
 
     if column=0 then
       drawTextRect(found.Text, found.parent.GetExtraTextIndentation(f_searchMarkCol),
@@ -2683,7 +2850,7 @@ begin
   case typ of
     levBeginEdit: BeginMultipleUpdate;
     levEndEdit: EndMultipleUpdate;
-    else internRepaint();
+    else sheduleInternRepaint();
   end;
 end;
 
@@ -2710,15 +2877,15 @@ end;
 
 procedure TTreeListView._HeaderSectionTrack(HeaderControl: TEventHeaderControl; Section: THeaderSection; Width: Integer; State: TSectionTrackState);
 begin
-  UpdateScrollSize;
+  // UpdateScrollSizeH; disabled because this can be slow on Linux (or better this event is called a dozen times more than necessary). ...resize is called after the tracked ended anyways
   if assigned(F_HeaderSectionTrack) then F_HeaderSectionTrack(HeaderControl,Section,Width,State);
-  internRepaint;
+  sheduleInternRepaint;
 end;
 procedure TTreeListView._HeaderSectionResize(HeaderControl: TEventHeaderControl; Section: THeaderSection);
 begin
-  UpdateScrollSize;
+  UpdateScrollSizeH;
   if assigned(F_HeaderSectionResize) then F_HeaderSectionResize(HeaderControl,Section);
-  internRepaint;
+  sheduleInternRepaint;
 end;
 
 procedure TTreeListView._HeaderSectionClick(HeaderControl: TEventHeaderControl; Section: THeaderSection);
@@ -2770,9 +2937,9 @@ end;
 
 procedure TTreeListView._HeaderSectionEndDrag(Sender: TObject);
 begin
-  UpdateScrollBarPos;
-  UpdateScrollSize;
-  internRepaint;
+  //UpdateScrollBarPos; no reason to call this at all, we didn't scroll
+  //UpdateScrollSizeH; not really necessary since total size remained the same
+  sheduleInternRepaint;
 end;
 
 procedure TTreeListView._HScrollChange(Sender: TObject);
@@ -2780,8 +2947,8 @@ begin
   hotTrackedRecordItem:=nil;
   UpdateScrollBarPos;
 //  UpdateScrollSize;
-  if assigned(F_HScrollBarChange) then F_VScrollBarChange(F_HScroll);
-  internRepaint;
+  sheduleInternRepaint;
+  if assigned(F_HScrollBarChange) then F_HScrollBarChange(F_HScroll);
 end;
 
 procedure TTreeListView._VScrollChange(Sender: TObject);
@@ -2790,8 +2957,8 @@ begin
   hotTrackedRecordItem:=nil;
   F_TopItem:=nil;
 //  UpdateScrollSize;
+  sheduleInternRepaint;
   if assigned(F_VScrollBarChange) then F_VScrollBarChange(F_VScroll);
-  internRepaint;
 end;
 
 procedure TTreeListView.UpdateScrollBarPos;
@@ -2815,6 +2982,52 @@ begin
   if F_SearchBar<>nil then if F_SearchBar.Visible then
     newvalue:=newvalue - F_SearchBar.Height;
   F_HScroll.Top:=newvalue;
+end;
+
+procedure TTreeListView.UpdateScrollSizeH;
+var
+  i,j: Integer;
+begin
+  if (tlioDeleting in InternOptions_tlio) or
+     (tlioUpdating in InternOptions_tlio) or
+     (f_RedrawBlock>0) then exit;
+  j:=0;
+  for i:=0 to F_Header.Sections.Count-1 do begin
+    j:=j+F_Header.Sections[i].Width;
+  end;
+  if j>=F_HScroll.width then begin
+    F_HScroll.Enabled:=true;
+    F_HScroll.max:=j;
+    //F_HScroll.PageSize / F_HScroll.max = F_HScroll.width / j
+    F_HScroll.PageSize:=F_HScroll.max*F_HScroll.width div j;
+    F_HScroll.LargeChange:=F_HScroll.width;
+  end else if F_HScroll.Enabled then begin
+    F_HScroll.Enabled:=true; //s.a.
+    F_HScroll.Position:=0;
+    F_HScroll.Enabled:=false;
+  end;
+end;
+
+procedure TTreeListView.UpdateScrollSizeV;
+var i:integer;
+begin
+  if (tlioDeleting in InternOptions_tlio) or
+     (tlioUpdating in InternOptions_tlio) or
+     (f_RedrawBlock>0) then exit;
+
+  i:=Items.GetRealItemCount([])-VisibleRowCount; //Anzahl der nicht anzeigbaren Items
+  if i-1>F_VScroll.Min then begin
+    //F_VScroll.Enabled:=false;
+    F_VScroll.Enabled:=true;
+    F_VScroll.Max:=i-1+VisibleRowCount;
+    F_VScroll.PageSize:=VisibleRowCount;
+    F_VScroll.LargeChange:=VisibleRowCount;
+  end else if F_VScroll.Enabled then begin
+    F_VScroll.Enabled:=true; //disabling doesn't always work directly??
+    F_VScroll.Position:=0;
+    F_VScroll.Enabled:=false;
+  end;
+  //F_VScroll.PageSize:=(ClientHeight-F_HScroll.Height*3-F_Header.Height) div (F_VScroll.Max - F_VScroll.Min + 1);
 end;
 
 procedure TTreeListView.selectRange(a, b: TTreeListItem;mouseSelect:boolean=false);
@@ -2860,41 +3073,9 @@ begin
 end;
 
 procedure TTreeListView.UpdateScrollSize;
-var i,j:integer;
 begin
-  if (tlioDeleting in InternOptions_tlio) or
-     (tlioUpdating in InternOptions_tlio) or
-     (f_RedrawBlock>0) then exit;
-
-  i:=Items.GetRealItemCount([])-VisibleRowCount; //Anzahl der nicht anzeigbaren Items
-  if i-1>F_VScroll.Min then begin
-    //F_VScroll.Enabled:=false;
-    F_VScroll.Enabled:=true;
-    F_VScroll.Max:=i-1+VisibleRowCount;
-    F_VScroll.PageSize:=VisibleRowCount;
-    F_VScroll.LargeChange:=VisibleRowCount;
-  end else if F_VScroll.Enabled then begin
-    F_VScroll.Enabled:=true; //disabling doesn't always work direct??
-    F_VScroll.Position:=0;
-    F_VScroll.Enabled:=false;
-  end;
-  //F_VScroll.PageSize:=(ClientHeight-F_HScroll.Height*3-F_Header.Height) div (F_VScroll.Max - F_VScroll.Min + 1);
-
-  j:=0;
-  for i:=0 to F_Header.Sections.Count-1 do begin
-    j:=j+F_Header.Sections[i].Width;
-  end;
-  i:=j-width+F_VScroll.Width;
-  if i>=0 then begin
-    F_HScroll.Enabled:=true;
-    F_HScroll.max:=i{$ifdef lcl}+F_HScroll.width{$endif};
-    F_HScroll.PageSize:=F_HScroll.width;
-    F_HScroll.LargeChange:=F_HScroll.width;
-  end else if F_HScroll.Enabled then begin
-    F_HScroll.Enabled:=true; //s.a.
-    F_HScroll.Position:=0;
-    F_HScroll.Enabled:=false;
-  end;
+  UpdateScrollSizeH;
+  UpdateScrollSizeV;
 end;
 
 //Messages
@@ -2913,6 +3094,7 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
           LM_LBUTTONDOWN = WM_LBUTTONDOWN;
           LM_RBUTTONDOWN = WM_RBUTTONDOWN;
           LM_LBUTTONUP = WM_LBUTTONUP;
+          LM_LBUTTONDBLCLK = WM_LBUTTONDBLCLK;
           LM_RBUTTONUP = WM_RBUTTONUP;
           LM_KEYDOWN = WM_KEYDOWN;
           LM_KEYUP = WM_KEYUP;
@@ -2921,14 +3103,18 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
           LM_SIZE = WM_SIZE;
           LM_PAINT = WM_PAINT;
           LM_ERASEBKGND = WM_ERASEBKGND;
+          LM_USER = WM_USER;
     type TLMMouseMove = TWMMouseMove;
          TLMLBUTTONDOWN = TWMLBUTTONDOWN;
-         TLMLButtonUp = TLMLBUTTONDOWN;
+         TLMLButtonUp = TWMLBUTTONUP;
+         TLMLButtonDblClk = TWMLButtonDblClk;
          TLMKeyDown = TWMKeyDown;
          TLMKeyUp = TWMKeyUp;
   {$endif}
 
-  const LM_USER_DEREFFERED_SCROLLING = LM_USER+1025;
+  const LM_USER_SHEDULED_SCROLLING = LM_USER+1125;
+  //const LM_USER_SHEDULED_REPAINT = LM_USER+1126;
+
 var tempRecordItem:TTreeListRecordItem;
     itemAtPos,nextToFocus: TTreeListItem;
     shiftState: TShiftState;
@@ -2943,14 +3129,17 @@ begin
       {$else}
       F_MouseWheelDelta:=F_MouseWheelDelta+TWMMouseWheel(message).WheelDelta;
       {$endif}
-      PostMessage(self.Handle,LM_USER_DEREFFERED_SCROLLING+100,0,0); //draw only after all wheel messages are processed
+      PostMessage(self.Handle,LM_USER_SHEDULED_SCROLLING,0,0); //draw only after all wheel messages are processed
     end;
-    LM_USER_DEREFFERED_SCROLLING+100: begin
+    LM_USER_SHEDULED_SCROLLING: begin
       if (F_MouseWheelDelta<=-120) or (F_MouseWheelDelta>=120) then begin
         F_VScroll.Position:=F_VScroll.Position-F_MouseWheelDelta div 120;
         F_MouseWheelDelta:=0;
       end;
     end;
+    LM_USER_SHEDULED_REPAINT:
+      if F_SheduledRepaint <> 0 then
+         internRepaint;
     LM_MOUSEMOVE: begin
       inherited;
       if (GetTickCount>F_LastMouseMove) and (GetTickCount-F_LastMouseMove<20) then exit;
@@ -3009,7 +3198,7 @@ begin
       if TLMLBUTTONDOWN(message).YPos<F_HScroll.top then begin
         shiftState:=KeyDataToShiftState(TLMLBUTTONDOWN(message).Keys);
         itemAtPos:=GetItemAtPos(TLMLBUTTONDOWN(message).YPos);
-        if message.msg=LM_LBUTTONDOWN then begin
+        if (message.msg=LM_LBUTTONDOWN) and (ExpandMode=emExpandByClick) then begin
           if (itemAtPos<>nil) and
              (TLMLBUTTONDOWN(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
              (TLMLBUTTONDOWN(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
@@ -3052,15 +3241,31 @@ begin
       end{$endif};
       inherited;
     end;
+    LM_LBUTTONDBLCLK:begin
+      if (TLMLButtonDblClk(message).YPos<F_HScroll.top) and (ExpandMode=emExpandByDoubleClick) then begin
+        itemAtPos:=GetItemAtPos(TLMLButtonDblClk(message).YPos);
+        if (itemAtPos<>nil) and
+           (TLMLButtonDblClk(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
+           (TLMLButtonDblClk(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
+            itemAtPos.Expanded:=not itemAtPos.Expanded;
+            //todo: check: if itemAtPos=focused then internRepaint;
+          end;
+      end;
+      inherited;
+    end;
     LM_KEYDOWN: begin
       shiftState:=KeyDataToShiftState(TLMKeyDown(message).KeyData);
       case TLMKeyDown(message).CharCode of
-        VK_UP:
+        VK_UP: begin
           if focused=nil then nextToFocus:=Items[0]
           else nextToFocus:=focused.GetPrevVisibleItem;
-        VK_DOWN:
+          message.Result:=1;
+        end;
+        VK_DOWN: begin
           if focused<>nil then nextToFocus:=focused.GetNextVisibleItem()
           else if items.count>0 then nextToFocus:=Items[0];//items.count-1];
+          message.Result:=1;
+        end;
 
         VK_HOME:
           if items.count>0 then nextToFocus:=Items[0];
@@ -3076,20 +3281,23 @@ begin
           if focused<>nil then nextToFocus:=focused.GetNextVisibleItem(VisibleRowCount)
           else if items.count>0 then nextToFocus:=Items[items.count-1];
 
-        VK_RIGHT:
+        VK_RIGHT: begin
           if focused<>nil then begin
             if not focused.Expanded then focused.Expand;
             if focused.SubItems.Count>0 then nextToFocus:=focused.SubItems[0]
             else nextToFocus:=focused;
           end;
+          message.Result:=1;
+        end;
 
-        VK_LEFT:
+        VK_LEFT: begin
           if focused<>nil then begin
             if (focused.Expanded) and (focused.SubItems.Count>0) then focused.Collapse
             else if focused.Parent<>nil then nextToFocus:=focused.Parent;
             if nextToFocus=nil then nextToFocus:=focused;
           end;
-
+          message.Result:=1; //keep focus
+        end;
         VK_BACK:
           if (focused<>nil) and (focused.Parent<>nil) then nextToFocus:=focused.Parent;
 
@@ -3126,6 +3334,8 @@ begin
         if ssCtrl in shiftState then begin
           F_SearchBar.Visible:=true;
           F_SearchBar.SetFocus;
+          UpdateScrollBarPos;
+          UpdateScrollSizeV;
         end else inherited;
       end else inherited;
     else inherited;
@@ -3144,9 +3354,26 @@ begin
 
 end;
 
+procedure TTreeListView.sheduleInternRepaint();
+begin
+  //the main reason for this deferred paint is that the lcl can be really
+  //slow on gtk 2 (#13363), but it probably also improves the performance
+  //on other widgetsets
+  if not HandleAllocated then
+     exit; //no handle to post sheduling message to (and painting makes no sense anyways if we aren't visible)
+  if F_SheduledRepaint=0 then begin
+    F_SheduledRepaint:=GetTickCount;
+    PostMessage(Handle,LM_USER_SHEDULED_REPAINT,0,0);
+  end else if F_SheduledRepaint+20<GetTickCount then begin
+    //force repaint with at least 50 fps
+    internRepaint();
+  end;
+end;
+
 procedure TTreeListView.internRepaint();
 begin
   invalidateAll();
+  F_SheduledRepaint:=0;
   internPaint;
 end;
 
@@ -3191,8 +3418,8 @@ var i,xpos:longint;
     defaultDraw:boolean;
     curItem: TTreeListItem;
     stack: TItemHierarchyStack;
-    outRect:TRect;
 begin
+  f_bufferComplete:= f_invalidateAll;
 //  if f_invalidateAll then Beep;
   switchDoubleBuffer(true);
   try
@@ -3219,8 +3446,7 @@ begin
 
       //Items
       if TopItem <>nil then begin
-        if RootLineMode <> lmNone then TreeColumnIndentation:=13
-        else TreeColumnIndentation:=3;
+        TreeColumnIndentation:=13;
 
         F_DrawingYPos:=TopPos+F_VScroll.Position*RowHeight;
         curItem:=TopItem;
@@ -3261,23 +3487,6 @@ begin
 end;
 
 procedure TTreeListView.internPaint;
-  function srect(x1,y1,x2,y2:longint):trect;
-  begin
-    if y1<y2 then begin
-      result.top:=y1;
-      result.Bottom:=y2;
-    end else begin
-      result.Bottom:=y1;
-      result.top:=y2;
-    end;
-    if x1<x2 then begin
-      result.Left:=x1;
-      result.Right:=x2;
-    end else begin
-      result.Right:=x1;
-      result.Left:=x2;
-    end;
-  end;
   function sortedrect(x1,y1,x2,y2:longint):TRect;
   begin
     if x1<=x2 then begin
@@ -3295,7 +3504,7 @@ procedure TTreeListView.internPaint;
       result.bottom:=y1;
     end;
   end;
-var i,ypos:integer;
+var ypos:integer;
  //   doubleBuffer:Tbitmap;
     curItem: TTreeListItem;
     stack: TItemHierarchyStack;
@@ -3305,7 +3514,9 @@ begin
   if (tlioUpdating in InternOptions_tlio) or
      (tlioDeleting in InternOptions_tlio) or
      (f_items=nil) or
-     (f_RedrawBlock>0) or (parent=nil) then exit;
+     (f_RedrawBlock>0) or (parent=nil) or
+     (F_SheduledRepaint<>0)  //we will be redrawn later anyways (notice that it isn't possible to draw now and set F_SheduledRepaint to 0 because if we are called from the lcl paint, we can't paint to the whole canvas here)
+     then exit;
 
   f_RedrawBlock:=1000;
   newWidth:=width +128 - Width mod 128;//don't change the size for small control size changes
@@ -3325,16 +3536,14 @@ begin
     canvas.Brush.Color:=clWhite;
     canvas.font.color:=clBlack;
     canvas.pen.Color:=clBlack;
-    canvas.TextOut(10,10,' '); //WTF!!????? borland.public.delphi.vcl.components.writing/msg/330fe30ad70dd07f
+    canvas.TextOut(width+10,10,' '); //WTF!!????? borland.public.delphi.vcl.components.writing/msg/330fe30ad70dd07f
     canvas.DrawFocusRect(F_MouseSelectingFocusRect);
     F_MouseSelectingFocusRectDraw:=false;
   end;
-
-  if (f_invalidatedItems.count>0) or f_invalidateAll then begin
-    f_bufferComplete:= f_invalidateAll;
+  if (f_invalidatedItems.count>0) or f_invalidateAll then
     internDraw();
-  end;
-  //small rect at the right side bottom
+
+  //small rect at the right side bottom where the scrollbars meet
   canvas.pen.Style:=psClear;
   canvas.brush.Style:=bsSolid;
   canvas.brush.Color:=clBtnFace;
@@ -3363,12 +3572,19 @@ begin
   if F_MouseSelectingFocusRectDraw then begin
     F_MouseSelectingFocusRect:=sortedrect(F_RealClickPos.x-F_HScroll.Position,F_RealClickPos.y-F_VScroll.Position*RowHeight,
                                           F_RealMousePos.x-F_HScroll.Position,F_RealMousePos.y-F_VScroll.Position*RowHeight);
+    {it is better to draw the selection rect on the scrollbar than
+     to have a selection rect whose top/bottom border is visible if it should be
+     invisible because the user selected more items than fit on the screen
+    if F_MouseSelectingFocusRect.Top<F_Header.Height-1 then
+      F_MouseSelectingFocusRect.Top:=F_Header.Height-1;
+    if F_MouseSelectingFocusRect.Bottom>F_HScroll.Top+1 then
+      F_MouseSelectingFocusRect.Bottom:=F_HScroll.top+1;}
     canvas.Brush.Style:=bsSolid;
     canvas.pen.style:=psSolid;
     canvas.Brush.Color:=clWhite;
     canvas.font.color:=clBlack;
     canvas.pen.Color:=clBlack;
-    canvas.TextOut(10,10,' ');
+    canvas.TextOut(width+10,10,' ');
     canvas.DrawFocusRect(F_MouseSelectingFocusRect);
   end;
   f_invalidatedItems.Clear;
@@ -3409,8 +3625,13 @@ begin
   RegisterComponents('BeniBela', [TTreeListView]);
 end;
 
+{$ifdef lcl}
+initialization
+{$I treelistview.lrs}
+{$endif}
+
 end.
 
 
 
-
+

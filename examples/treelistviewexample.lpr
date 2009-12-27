@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms                  ,treelistviewexampleu
+  Forms, runtimetypeinfocontrols                  ,treelistviewexampleu
   { you can add units after this };
 
 begin

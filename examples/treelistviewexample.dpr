@@ -5,7 +5,8 @@ uses  forms,
   Application.Initialize;
   Application.CreateForm(texampleform, form);
   
-  //this is a very stupid/clever workaround but at least it works
+  //this is a very stupid/clever workaround but at least it works (and the same
+  //unit can be used in Lazarus and Delphi)
   while running do Application.ProcessMessages;
 
 end.

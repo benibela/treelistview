@@ -1,5 +1,15 @@
 unit treelistviewexampleu;
 
+(* This example shows a possible usage of my tree list view
+
+   The TTreeListView is created dynamically in the constructor TExampleForm.create (see below)
+
+   If you wonder why there is no form and if you have to use it always in this
+   strange way, the answer is no. The example just creates the form dynamically
+   because this works in Lazarus and Delphi in the same way (and you can compile
+   it even, if you haven't installed the packages).
+*)
+
 {$ifdef fpc}
 {$mode delphi}
 {$endif}
@@ -8,7 +18,10 @@ unit treelistviewexampleu;
 interface
 
 uses
-  Classes, SysUtils,Forms,TreeListView,StdCtrls,Controls,Graphics,menus;
+  Classes, SysUtils,ExtCtrls,Forms,TreeListView,StdCtrls,Controls,Graphics,menus
+  {$IFDEF lcl}
+  ,RTTIGrids
+  {$ENDIF};
 
 
 
@@ -75,9 +88,10 @@ var i:longint;
     bmp:TBitmap;
     pmenu: TPopupMenu;
     mi: TMenuItem;
+    {$IFDEF lcl} grid: TTIPropertyGrid; {$ENDIF}
 begin
   inherited {$ifndef fpc}createnew(theOwner){$endif};
-  width:=640;
+  width:=800;
   height:=400;
   left:=(screen.width-width) div 2;
   top:=(screen.Height-height) div 2;
@@ -194,7 +208,20 @@ begin
    TreeListView1.createSearchBar();
    visible:=true;
    onclose:=FormClose;
- end;
+
+   {$IFDEF lcl}
+   with TSplitter.Create(self) do begin
+     Parent:=self;
+     align:=alLeft;
+   end;
+
+   grid:=TTIPropertyGrid.Create(self);
+   grid.Align:=alLeft;
+   grid.TIObject:=TreeListView1;
+   grid.Parent:=self;
+
+   {$ENDIF}
+end;
 
 end.
-
+

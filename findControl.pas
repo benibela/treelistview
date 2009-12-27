@@ -119,7 +119,12 @@ published
   property LoopAroundState: string read FLoopAroundState write FLoopAroundState; //**< Text to display when the text has only been found after looping around (needs fscStatus)
 end;
 
+procedure Register;
+
 implementation
+{$ifdef lcl}
+uses LResources; //for icon
+{$endif}
 
 { TSearchBar }
 
@@ -167,7 +172,7 @@ begin
     //VK_DOWN,VK_UP,VK_NEXT,VK_PRIOR:; //see key down
     VK_SHIFT,VK_CONTROL,VK_MENU: ;
     else begin
-      if assigned(OnKeyUp) then
+      if assigned(OnKeyDown) then
        OnKeyDown(self,key,shift); //pass key events
       DoSearch(true,false);
     end;
@@ -266,15 +271,17 @@ begin
   FSubComponents:=AValue;
   updateComponents;
 end;
-
+{$ifndef lcl}
 type TControlCracker = class(TControl)
 public
   property caption;
 end;
+{$endif}
 
 procedure TSearchBar.updateComponents;
 const HSPACING:longint = 3;
 var cx:longint;
+    tempBitmap: graphics.TBitmap;
   //returns if the control is new created
   function setControl(show: boolean; var control: TControl; controlClass: TControlClass; cap:string; wid: longint=-1): boolean;
   begin
@@ -286,7 +293,9 @@ var cx:longint;
         result:=true;
       end;
       control.Visible:=true;
-      {$ifndef lcl}TControlCracker({$else}(control).Caption:=cap;{$endif}
+      {$ifndef lcl}TControlCracker{$endif}(control).Caption:=cap;
+      if tempBitmap.Canvas.TextWidth(cap) > wid+5 then
+         wid:=tempBitmap.Canvas.TextWidth(cap)+5;
       control.Left:=cx;
       if wid<>-1 then control.Width:=wid;
       cx:=cx+control.Width+HSPACING;
@@ -296,38 +305,51 @@ var cx:longint;
     end;
   end;
 begin
-  cx:=HSPACING;
-  if setControl(fscCloseButton in SubComponents,tcontrol(closeBtn),TSpeedButton, 'X',20) then
-    closeBtn.OnClick:=closeBtnClick;
-  SetControl(fscCaption in SubComponents,tcontrol(captionLbl),TLabel, Caption);
-  if SetControl(true,tcontrol(searchEdt),TEdit, '',150) then begin
-    searchEdt.OnKeyDown:=searchEdtKeyDown;
-    searchEdt.OnKeyUp:=searchEdtKeyUp;
-  end;
-  if SetControl(fscSelectLocation in SubComponents,tcontrol(locationsCmb),TComboBox, '',100) then
-    locationsCmb.Style:=csDropDownList;
-  if SetControl(fscSearchForward in SubComponents,tcontrol(searchForwardBtn),TSpeedButton, SearchForwardText,75) then
-    searchForwardBtn.OnClick:=searchButtonClick;
-  if setControl(fscSearchBackwards in SubComponents,tcontrol(searchBackwardBtn),TSpeedButton,searchBackwardText,75) then
-    searchBackwardBtn.OnClick:=searchButtonClick;
-  if setControl(fscHighlight in SubComponents,tcontrol(highlightBtn),TSpeedButton,HighlightText,75) then begin
-    highlightBtn.OnClick:=highlightClick;
-    highlightBtn.OnMouseUp:=highlightBtnMouseUp;
-    highlightBtn.AllowAllUp:=true;
-    highlightBtn.GroupIndex:=1;
-  end;
+  tempBitmap:=graphics.TBitmap.Create;
+  tempBitmap.Width:=8;
+  tempBitmap.Height:=8;
+  tempBitmap.Canvas.Font:=font;
+  tempBitmap.Canvas.TextOut(0,0,'load font'); //yes this is really needed, otherwise the lcl chrashes
+  try
+    cx:=HSPACING;
+    if setControl(fscCloseButton in SubComponents,tcontrol(closeBtn),TSpeedButton, 'X',20) then
+      closeBtn.OnClick:=closeBtnClick;
+    SetControl(fscCaption in SubComponents,tcontrol(captionLbl),TLabel, Caption);
+    if SetControl(true,tcontrol(searchEdt),TEdit, '',150) then begin
+      searchEdt.OnKeyDown:=searchEdtKeyDown;
+      searchEdt.OnKeyUp:=searchEdtKeyUp;
+    end;
+    if SetControl(fscSelectLocation in SubComponents,tcontrol(locationsCmb),TComboBox, '',100) then
+      locationsCmb.Style:=csDropDownList;
+    if SetControl(fscSearchForward in SubComponents,tcontrol(searchForwardBtn),TSpeedButton, SearchForwardText,75) then
+      searchForwardBtn.OnClick:=searchButtonClick;
+    if setControl(fscSearchBackwards in SubComponents,tcontrol(searchBackwardBtn),TSpeedButton,searchBackwardText,75) then
+      searchBackwardBtn.OnClick:=searchButtonClick;
+    if setControl(fscHighlight in SubComponents,tcontrol(highlightBtn),TSpeedButton,HighlightText,75) then begin
+      highlightBtn.OnClick:=highlightClick;
+      highlightBtn.OnMouseUp:=highlightBtnMouseUp;
+      highlightBtn.AllowAllUp:=true;
+      highlightBtn.GroupIndex:=1;
+    end;
 
-  setControl(fscStatus in SubComponents,tcontrol(statusLabel),TLabel,'');
-  moveComponents;
+    setControl(fscStatus in SubComponents,tcontrol(statusLabel),TLabel,'');
+    moveComponents;
+  finally
+    tempBitmap.free;
+  end;
 end;
 
 procedure TSearchBar.moveComponents;
-var i:longint;
+var i,maxHeight:longint;
 begin
   if searchEdt=nil then exit;
+  maxHeight:=0;
+  for i:=0 to ControlCount -1 do
+    if Controls[i].Height>maxHeight then
+       maxHeight:=Controls[i].Height;
   for i:=0 to ControlCount -1 do begin
     if not (Controls[i] is TLabel) then
-       Controls[i].Height:=searchEdt.Height;
+       Controls[i].Height:=maxHeight;
     Controls[i].Top:=(Height-Controls[i].Height) div 2;
   end;
 end;
@@ -374,7 +396,12 @@ begin
   FLoopAroundState:='Loop around';
   FSubComponents:=[];
   SubComponents:=[fscCloseButton, fscCaption, fscSearchForward, fscSearchBackwards, fscStatus];
+  //size with seem to work well with the default font size
+  {$IFNDEF WIN32}
+  Height:=38;
+  {$ELSE}
   Height:=30;
+  {$ENDIF}
   FHighlighting:=false;
   FFoundColor:=$77DD77;
   FNotFoundColor:=rgb($DD,$77,$77);
@@ -399,5 +426,15 @@ begin
   inherited destroy();
 end;
 
-end.
+procedure Register;
+begin
+  RegisterComponents('BeniBela', [TSearchBar]);
+end;
 
+{$ifdef lcl}
+initialization
+{$I findControl.lrs}
+{$endif}
+
+end.
+
