@@ -36,7 +36,6 @@ type
   TTreeListItem=class;
   TTreeListView = class;
 
-  TImageTyp=(itNone,itListIndex,itBitmap);
   TListEventTyp=(levBeginEdit,levEndEdit,levAdd,levInsert,levClear,levDelete,levExchange,levMove,levSort,levAssign);
   TListEvent = procedure (list: TObjectList; typ: TListEventTyp) of object;
   {** @abstract This is a list storing TObjects for the TreeListView
@@ -254,7 +253,7 @@ type
       function GetParentInList(List: TTreeListItems=nil):TTreeListItem;//**< Returns the parent which is in the given list, or nil. @br If List = nil then it takes TreeListView.Items @br If self is in the list it returns self
 
       procedure GetParentHierarchyStack(out stack:TItemHierarchyStack); //**returns a stack you can use to enumerate all item iterative
-      function GetNextFromHierarchyStack(var stack: TItemHierarchyStack; const mustBeVisible: boolean=false): TTreeListItem;//** get the (visible) next item, using a hierarchy stack
+      function GetNextFromHierarchyStack(var stack: TItemHierarchyStack; const mustBeVisible: boolean=false): TTreeListItem;//<** get the (visible) next item, using a hierarchy stack
 
       property Parent:TTreeListItem read F_parent; //**< This is a parent of this item @br This is @nil if the item is in @noAutoLink TreeListView.Items
       property TreeListView:TTreeListView read F_TreeListview; //**< This is the TreeListView showing this item
@@ -317,7 +316,9 @@ type
 
   {** @abstract This is the main TreeListView-class
       You should never need to @noAutoLink create an object of a different class of this file @br
-      Example (use in FormCreate):
+      Example (use in FormCreate), which creates two items one called 'Item' and one called
+      'Child' where latter shows the value 'Property' in the second column (the tree with the
+      names will be in the first column):
   @longCode(#
          List:=TTreeListView.create(self);
          List.Parent:=self;
@@ -355,7 +356,7 @@ type
     f_RedrawBlock: longint;
     f_invalidatedItems: TList;
     f_invalidateAll: boolean;
-    f_bufferComplete: boolean; //**< This is true if the buffer contains the recent state of all items (= the last drawing was called with f_invalidateAll)
+    f_bufferComplete: boolean;//This is true if the buffer contains the recent state of all items (= the last drawing was called with f_invalidateAll)
 
     TreeColumnIndentation:integer;
     F_TopItem: TTreeListItem;
@@ -582,7 +583,7 @@ type
     //elements drawing
     //**This method will soon repaint all items.
     //**This means as soon as the calling functions finished (= returns to the application message loop) and all pending messages are processed, internRepaint will be called
-    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(invalidateAll) @seealso(invalidateItem) @seealso(performSheduleInternRepaint)
+    //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
     procedure sheduleInternRepaint();
     //**This method forces a redraw of all items (=invalidateAll and internPaint)
     //**@seealso(internPaint) @seealso(sheduleInternRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
@@ -648,7 +649,7 @@ type
     property ButtonColor:TColor read F_ButtonColor write SetButtonColor; //**< Color of the expand/collaps button
     property BackGroundColor:TColor read F_BgColor write SetBgColor;
 
-    property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to create new ones
+    property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to @noAutoLink create new ones
 
     //Sortierungsereignisse
     property OnCompareItems: TCompareTreeListItemsEvent read F_OnCompareItems write F_OnCompareItems; //**< Event which is called when two items are compared during sorting @br The default sorting is case-insensitive lexicographical on text and numerical on number string parts, every level is @noAutoLink sorted on its own, parents are not changed
@@ -2028,8 +2029,10 @@ end;
 
 function TTreeListView.GetTopItemEven: boolean;
 begin
-  if tlvoStripInvisibleItems in f_options then GetTopItem
-  else result:=F_VScroll.Position mod 2 = 0;
+  if tlvoStripInvisibleItems in f_options then begin
+    GetTopItem; //updates the variable in the line below
+    result:=F_TopItemEven;
+  end else result:=F_VScroll.Position mod 2 = 0;
 end;
 
 procedure TTreeListView.SetSortColumn(const AValue: longint);
