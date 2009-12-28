@@ -506,7 +506,7 @@ type
     function RealControlHeight(c: Twincontrol): longint;
     function RealClientHeight: longint;
     procedure DrawAlignDotLine(x,y:integer;const x2,y2:integer;const color:TColor);
-    procedure drawTextRect(s:string;extraIndentation:longint;align:TAlignment; const rec: TRect; searchDraw: boolean=false);
+    procedure drawTextRect(s:string;extraIndentation:longint;align:TAlignment; const rec: TRect; searchDraw: boolean);
     function CompareItems(i1, i2: TTreeListItem): longint;
 
     procedure BeginMultipleUpdate;
@@ -1680,16 +1680,18 @@ var i,ynew,yold,recordId:integer;
     rec:Trect;
   procedure drawTreeColumnText;
   var textStartX: longint;
+      drawSearchMark: boolean;
   begin
     textStartX:=F_Indent*LINE_DISTANCE+F_TreeListView.TreeColumnIndentation;
+    drawSearchMark:=TreeListView.f_searchMarkVisible and (self=TreeListView.f_searchMarkItem) and (TreeListView.f_searchMarkCol=0);
     if ImageBitmap<>nil then begin
       F_TreeListView.Canvas.Draw(textStartX+rec.left+LEFT_TEXT_PADDING,rec.top,ImageBitmap);
-      F_TreeListView.drawTextRect(Text,textStartX+ImageBitmap.Width+LEFT_TEXT_PADDING,taLeftJustify, rec);
+      F_TreeListView.drawTextRect(Text,textStartX+ImageBitmap.Width+LEFT_TEXT_PADDING,taLeftJustify, rec, drawSearchMark);
     end else if (F_TreeListView.Images<>nil) and (ImageIndex>-1) then begin
       F_TreeListView.Images.draw(F_TreeListView.Canvas,textStartX+rec.left+LEFT_TEXT_PADDING,rec.Top,ImageIndex);
-      TreeListView.drawTextRect(Text,textStartX+F_TreeListView.Images.Width+LEFT_TEXT_PADDING,taLeftJustify,rec);
+      TreeListView.drawTextRect(Text,textStartX+F_TreeListView.Images.Width+LEFT_TEXT_PADDING,taLeftJustify,rec,drawSearchMark);
     end else
-      TreeListView.drawTextRect(Text,textStartX,taLeftJustify,rec);
+      TreeListView.drawTextRect(Text,textStartX,taLeftJustify,rec,drawSearchMark);
   end;
   procedure drawTreeColumn;
   var i,tempX:longint;
@@ -1792,7 +1794,7 @@ begin
             drawTreeColumnText;
             drawTreeColumn;
           end else
-            F_TreeListView.drawTextRect(RecordItems[recordId].Text,0,F_TreeListView.F_Header.Sections[i].Alignment,rec);
+            F_TreeListView.drawTextRect(RecordItems[recordId].Text,0,F_TreeListView.F_Header.Sections[i].Alignment,rec,TreeListView.f_searchMarkVisible and (self=TreeListView.f_searchMarkItem) and (TreeListView.f_searchMarkCol=recordId));
           if not F_TreeListView.DoCustomRecordItemDrawEvent(cdetPostPaint,RecordItems[recordId],rec) then
             break;
         end;
@@ -2452,26 +2454,25 @@ begin
     column:=found.Index;
     textPos:=pos(lowercase(searchFor),lowercase(found.text));
 
-    if (F_HighlightAll) or (f_searchMarkVisible and ((found.Parent<>f_searchMarkItem)or(f_searchMarkCol<>column)or(f_searchMarkStart<>textPos))) then
-      sheduleInternRepaint(); //direct repaint, since the search mark will just be drawn over the normal rendering
+    //if (F_HighlightAll) or (f_searchMarkVisible and ((found.Parent<>f_searchMarkItem)or(f_searchMarkCol<>column)or(f_searchMarkStart<>textPos))) then
+    //  sheduleInternRepaint(); //direct repaint, since the search mark will just be drawn over the normal rendering
 
+    if selCount<=1 then selected:=found.F_Parent;
     f_searchMarkItem:=found.F_Parent;
     f_searchMarkCol:=column;
     f_searchMarkStart:=textPos;
     f_searchMarkLen:=length(searchFor);
     f_searchMarkVisible:=true;
-    if selCount<=1 then selected:=found.F_Parent;
     ensureVisibility(f_searchMarkItem,f_searchMarkCol);
 
-    if F_SheduledRepaint<>0 then //ensure that the current state is displayed. TODO: This is almost the same as internPaint should do, what is better?
-      internRepaint();
+    sheduleInternRepaint(); //no need to hurry (this will be faster than internRepaint if the user holds return pressed)
 
-    if column=0 then
+    {if column=0 then
       drawTextRect(found.Text, found.parent.GetExtraTextIndentation(f_searchMarkCol),
                    taLeftJustify,found.Parent.getBounds(f_searchMarkCol), true)
     else
       drawTextRect(found.Text, 0,
-                   ColumnFromOriginalIndex(f_searchMarkCol).Alignment,found.parent.getBounds(f_searchMarkCol), true);
+                   ColumnFromOriginalIndex(f_searchMarkCol).Alignment,found.parent.getBounds(f_searchMarkCol), true);}
    end;
  finally //
    f_searchActivated:=false;
