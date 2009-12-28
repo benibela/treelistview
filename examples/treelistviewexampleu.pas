@@ -30,6 +30,7 @@ type
 { TExampleForm }
 
 TExampleForm= class(TCustomForm)
+  procedure ExampleFormShow(Sender: TObject);
 
   procedure TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
   procedure TLCollapsed(sender: TObject; item: TTreeListItem);
@@ -62,6 +63,12 @@ begin
   running:=false;
   Application.Terminate;
 end;
+
+procedure TExampleForm.ExampleFormShow(Sender: TObject);
+begin
+  TreeListView1.createSearchBar();
+end;
+
 procedure TExampleForm.TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
 begin
   Caption:=item.parent.Text + ' clicked on: '+item.Text;
@@ -205,7 +212,7 @@ begin
    mi:=TMenuItem.create(self);mi.Caption:='does nothing';
    pmenu.items.add(mi);
    TreeListView1.popupmenu:=pmenu;
-   TreeListView1.createSearchBar();
+   OnShow:=ExampleFormShow;
    visible:=true;
    onclose:=FormClose;
 

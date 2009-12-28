@@ -91,6 +91,7 @@ protected
   procedure updateComponents;
   procedure moveComponents;
   {$ifdef lcl}procedure DoOnResize; override;{$endif}
+  {$ifndef fpc}procedure VisibleChanging; override; {$endif}
   procedure DoSearch(incremental, backwards: boolean);
   {$ifdef lcl}procedure ResizeDelayedAutoSizeChildren; override;{$endif}
 public
@@ -342,13 +343,12 @@ end;
 procedure TSearchBar.moveComponents;
 var i,maxHeight:longint;
 begin
-  if searchEdt=nil then exit;
   maxHeight:=0;
   for i:=0 to ControlCount -1 do
     if Controls[i].Height>maxHeight then
        maxHeight:=Controls[i].Height;
   for i:=0 to ControlCount -1 do begin
-    if not (Controls[i] is TLabel) then
+    if Controls[i] is TSpeedButton then
        Controls[i].Height:=maxHeight;
     Controls[i].Top:=(Height-Controls[i].Height) div 2;
   end;
@@ -363,6 +363,15 @@ begin
 end;
 {$endif}
 
+{$ifndef fpc}
+procedure TSearchBar.VisibleChanging;
+begin
+  moveComponents;
+  FOldHeight:=Height;
+  inherited Resize;
+end;
+{$endif}
+  
 procedure TSearchBar.DoSearch(incremental, backwards: boolean);
 begin
   if assigned(OnSearch) then OnSearch(self, incremental, backwards);
@@ -385,6 +394,8 @@ end;
 
 
 constructor TSearchBar.Create(TheOwner: TComponent);
+var
+  tempBitmap: graphics.TBitmap;
 begin
   inherited Create(TheOwner);
   Align:=alBottom;
@@ -396,12 +407,14 @@ begin
   FLoopAroundState:='Loop around';
   FSubComponents:=[];
   SubComponents:=[fscCloseButton, fscCaption, fscSearchForward, fscSearchBackwards, fscStatus];
-  //size with seem to work well with the default font size
-  {$IFNDEF WIN32}
-  Height:=38;
-  {$ELSE}
-  Height:=30;
-  {$ENDIF}
+  //size which seem to work well with the default font size
+  tempBitmap:=graphics.TBitmap.Create;
+  tempBitmap.Width:=8;
+  tempBitmap.Height:=8;
+  tempBitmap.Canvas.Font:=font;
+  tempBitmap.Canvas.TextOut(0,0,'load font'); //yes this is really needed, otherwise the lcl chrashes
+  Height:=2*tempBitmap.Canvas.TextHeight('^MH,')+3;
+  tempBitmap.free;
   FHighlighting:=false;
   FFoundColor:=$77DD77;
   FNotFoundColor:=rgb($DD,$77,$77);
@@ -437,4 +450,4 @@ initialization
 {$endif}
 
 end.
-
+
