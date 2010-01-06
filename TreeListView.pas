@@ -23,8 +23,8 @@ unit TreeListView;
 {$endif}
 {$ifdef lcl}
   {$define openOwnPopupMenu}     //disable if you get 2 popupmenus (it is necessary in some lcl versions)
+  {$define useRealClipping}        //old Lazarus/fpc don't support clipping (should work with (Lazarus  >= 19742 (0.9.27) and fpc >2.3.1) or (Lazarus > 20731 (0.9.27)))
 {$endif}
-{$define useRealClipping}        //old Lazarus/fpc don't support clipping (should work with (Lazarus  >= 19742 (0.9.27) and fpc >2.3.1) or (Lazarus > 20731 (0.9.27)))
 
 interface
 
@@ -281,8 +281,8 @@ type
     published
       property RecordItems:TRecordItemList read F_RecordItems write SetRecordItems; //**< Items in the columns @br Normally you can use RecordItemsText for easier access
       property SubItems:TTreeListItems read F_SubItems write SetSubItems; //**< Indented child items
-      property ImageIndex:longint read F_ImageIndex write F_ImageIndex; //**< If this is > -1 then the image of the TreeListView.Images will be painted before this item @br This property is ignored if ImageBitmap <> @nil or TreeListView.Images = @nil
-      property ImageBitmap:graphics.TBitmap read F_ImageBitmap  write F_ImageBitmap; //**< Bitmap which should be drawn before the item
+      property ImageIndex:longint read F_ImageIndex write F_ImageIndex; //**< If this is > -1 then the image of the TreeListView.Images will be painted before this item @br This property is ignored if ImageBitmap <> @nil or TreeListView.Images = @nil @br Use ImageBitmap if you are in doubt (a image list may be better with regards to caching issues, but clipping is slower)
+      property ImageBitmap:graphics.TBitmap read F_ImageBitmap  write F_ImageBitmap; //**< Bitmap which should be drawn before the item @br This image is not freed when the item is destroyed, so you can use the same bitmap for multiple items
       property Text:string read GetText write SetText; //**< Text in the first column of this item @br This is always equal to RecordItemsText[0]
       property Selected: boolean read F_Selected write SetSelected; //**< Controls if this item is selected or not
   end;
@@ -2981,7 +2981,7 @@ var i,w,maxw:longint;
 begin
   maxw:=0;
   for i:=0 to items.count-1 do begin
-    {$ifdef fpc}
+    {$ifdef allowHeaderDragging}
     w:=Items[i].GetMaxColumnWidth(section.OriginalIndex);
     {$else}
     w:=Items[i].GetMaxColumnWidth(section.index);

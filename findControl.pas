@@ -17,6 +17,10 @@ uses
   Classes, SysUtils, StdCtrls, ExtCtrls, Controls,Buttons,Graphics
   {$ifdef lcl},LCLType,LCLIntf{$else},windows,messages{$endif};
 
+{$IFNDEF LCL}
+const
+  WM_USER_VISIBLE_CHANGED = WM_USER+1150;
+{$ENDIF}
 type
 TFindState = set of (fsFound, fsLoopAround);
 
@@ -91,11 +95,15 @@ protected
   searchEdt: TEdit;
   procedure updateComponents;
   procedure moveComponents;
-  {$ifdef lcl}procedure DoOnResize; override;{$endif}
-  {$ifndef fpc}procedure VisibleChanging; override; {$endif}
-  procedure DoSearch(incremental, backwards: boolean);
-  {$ifdef lcl}procedure ResizeDelayedAutoSizeChildren; override;{$endif}
+  {$ifdef lcl}
+  procedure DoOnResize; override;
+  procedure ResizeDelayedAutoSizeChildren; override;
   procedure SetVisible(Value: Boolean); override;
+  {$else}
+  procedure VisibleChanging; override;
+  procedure VisibleChangedMessage(var msg: TMsg); message WM_USER_VISIBLE_CHANGED;
+  {$endif}
+  procedure DoSearch(incremental, backwards: boolean);
 public
   property SearchText: string read GetSearchText; //**<This is the text to search, entered by the user
   property SearchLocation: longint read GetSearchLocation write SetSearchLocation;  //**< Currently selected combobox item
@@ -364,23 +372,7 @@ begin
   FOldHeight:=Height;
   inherited DoOnResize;
 end;
-{$endif}
 
-{$ifndef fpc}
-procedure TSearchBar.VisibleChanging;
-begin
-  moveComponents;
-  FOldHeight:=Height;
-  inherited VisibleChanging;
-end;
-{$endif}
-  
-procedure TSearchBar.DoSearch(incremental, backwards: boolean);
-begin
-  if assigned(OnSearch) then OnSearch(self, incremental, backwards);
-end;
-
-{$ifdef lcl}
 procedure TSearchBar.ResizeDelayedAutoSizeChildren;
 begin
   inherited ResizeDelayedAutoSizeChildren;
@@ -398,7 +390,28 @@ begin
     else if  Visible and assigned(OnShow) then OnShow(self);
 end;
 
+{$else}
+procedure TSearchBar.VisibleChanging;
+begin
+  moveComponents;
+  FOldHeight:=Height;
+  postMessage(handle,WM_USER_VISIBLE_CHANGED,0,0);
+
+  inherited VisibleChanging;
+end;
+
+procedure TSearchBar.VisibleChangedMessage(var msg: TMsg);
+begin
+  if Visible and assigned(OnClose) then OnShow(self)
+  else if  not Visible and assigned(OnShow) then OnClose(self);
+end;
 {$endif}
+
+procedure TSearchBar.DoSearch(incremental, backwards: boolean);
+begin
+  if assigned(OnSearch) then OnSearch(self, incremental, backwards);
+end;
+
 
 procedure TSearchBar.setFocus;
 begin
