@@ -20,6 +20,7 @@ unit TreeListView;
   {$define allowHeaderVisible}   //this needs at least lazarus 9.27 (SVN, r16817)
 {$endif}
 {$ifdef lcl}{$define openOwnPopupMenu}{$endif} //disable if you get 2 popupmenus (it is necessary in some lcl versions)
+
 interface
 
 uses
@@ -435,6 +436,7 @@ type
     F_DrawingYPos: longint;
     F_DrawingRecordItemRect: TRect;
     F_SheduledRepaint: DWord;
+    F_SheduledHScroll: DWord;
 
     //Inputevents
     F_RealClickPos, F_RealMousePos: TPoint;
@@ -745,11 +747,13 @@ const HeaderItemDistance=2; //Distance between Header and first drawn item
       LEFT_TEXT_PADDING=3;
       LINE_DISTANCE=15;
       EXPANDING_BUTTON_WIDTH=9;
-      {$IFDEF lcl}
-      LM_USER_SHEDULED_REPAINT = LM_USER+1126;
-      {$ELSE}
-      LM_USER_SHEDULED_REPAINT = WM_USER+1126;
+      {$IFNDEF lcl}
+      LM_USER=WM_USER;
       {$ENDIF}
+      LM_USER_SHEDULED_EVENT = LM_USER+1125;
+      EVENT_REPAINT = 1;
+      EVENT_MOUSE_SCROLL = 2;
+      EVENT_HSCROLL = 3;
 
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{
 ################################################################################
@@ -2948,11 +2952,20 @@ end;
 
 procedure TTreeListView._HScrollChange(Sender: TObject);
 begin
-  hotTrackedRecordItem:=nil;
-  UpdateScrollBarPos;
-//  UpdateScrollSize;
-  sheduleInternRepaint;
-  if assigned(F_HScrollBarChange) then F_HScrollBarChange(F_HScroll);
+  //GTK2 send a high amount an scroll change events, so lets collect them
+  //and draw the changes later
+  //It would be possible to repaint the treelistview here, but if we do that
+  //the scrollbar itself isn't updated by gtk
+  //We can't use sheduleInternRepaint, because the header position has to be
+  //updated with the correct scroll position, and moving a control will erase
+  //the background
+  if F_SheduledHScroll=0 then begin
+    F_SheduledHScroll:=GetTickCount;
+    PostMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_HSCROLL,0);
+  end else if F_SheduledHScroll+20<GetTickCount then begin
+    //force repaint with at least 50 fps
+    SendMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_HSCROLL,0);
+  end;
 end;
 
 procedure TTreeListView._VScrollChange(Sender: TObject);
@@ -2972,8 +2985,6 @@ begin
      (tlioUpdating in InternOptions_tlio) or
      (f_RedrawBlock>0) then exit;
 
-  F_Header.left:=-F_HScroll.Position;
-
   F_VScroll.Left:=ClientWidth-F_VScroll.Width;
   F_VScroll.Top:=F_Header.Height;
   newvalue:=ClientHeight-F_VScroll.Top-F_HScroll.Height;
@@ -2986,6 +2997,9 @@ begin
   if F_SearchBar<>nil then if F_SearchBar.Visible then
     newvalue:=newvalue - F_SearchBar.Height;
   F_HScroll.Top:=newvalue;
+
+  if F_Header.left<>-F_HScroll.Position then
+    F_Header.left:=-F_HScroll.Position;
 end;
 
 procedure TTreeListView.UpdateScrollSizeH;
@@ -3107,7 +3121,6 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
           LM_SIZE = WM_SIZE;
           LM_PAINT = WM_PAINT;
           LM_ERASEBKGND = WM_ERASEBKGND;
-          LM_USER = WM_USER;
     type TLMMouseMove = TWMMouseMove;
          TLMLBUTTONDOWN = TWMLBUTTONDOWN;
          TLMLButtonUp = TWMLBUTTONUP;
@@ -3116,7 +3129,6 @@ procedure TTreeListView.WndProc(var message:{$IFDEF LCL}TLMessage{$else}TMessage
          TLMKeyUp = TWMKeyUp;
   {$endif}
 
-  const LM_USER_SHEDULED_SCROLLING = LM_USER+1125;
   //const LM_USER_SHEDULED_REPAINT = LM_USER+1126;
 
 var tempRecordItem:TTreeListRecordItem;
@@ -3133,17 +3145,27 @@ begin
       {$else}
       F_MouseWheelDelta:=F_MouseWheelDelta+TWMMouseWheel(message).WheelDelta;
       {$endif}
-      PostMessage(self.Handle,LM_USER_SHEDULED_SCROLLING,0,0); //draw only after all wheel messages are processed
+      PostMessage(self.Handle,LM_USER_SHEDULED_EVENT,EVENT_MOUSE_SCROLL,0); //draw only after all wheel messages are processed
     end;
-    LM_USER_SHEDULED_SCROLLING: begin
-      if (F_MouseWheelDelta<=-120) or (F_MouseWheelDelta>=120) then begin
-        F_VScroll.Position:=F_VScroll.Position-F_MouseWheelDelta div 120;
-        F_MouseWheelDelta:=0;
+    LM_USER_SHEDULED_EVENT:
+      case message.WParam of
+        EVENT_REPAINT:
+          if F_SheduledRepaint <> 0 then
+            internRepaint;
+        EVENT_MOUSE_SCROLL:
+          if (F_MouseWheelDelta<=-120) or (F_MouseWheelDelta>=120) then begin
+            F_VScroll.Position:=F_VScroll.Position-F_MouseWheelDelta div 120;
+            F_MouseWheelDelta:=0;
+          end;
+        EVENT_HSCROLL: begin
+          hotTrackedRecordItem:=nil;
+          UpdateScrollBarPos;
+        //  UpdateScrollSize;
+          internRepaint;
+          F_SheduledHScroll:=0;
+          if assigned(F_HScrollBarChange) then F_HScrollBarChange(F_HScroll);
+        end;
       end;
-    end;
-    LM_USER_SHEDULED_REPAINT:
-      if F_SheduledRepaint <> 0 then
-         internRepaint;
     LM_MOUSEMOVE: begin
       inherited;
       if (GetTickCount>F_LastMouseMove) and (GetTickCount-F_LastMouseMove<20) then exit;
@@ -3367,7 +3389,7 @@ begin
      exit; //no handle to post sheduling message to (and painting makes no sense anyways if we aren't visible)
   if F_SheduledRepaint=0 then begin
     F_SheduledRepaint:=GetTickCount;
-    PostMessage(Handle,LM_USER_SHEDULED_REPAINT,0,0);
+    PostMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_REPAINT,0);
   end else if F_SheduledRepaint+20<GetTickCount then begin
     //force repaint with at least 50 fps
     internRepaint();
@@ -3603,7 +3625,7 @@ begin
     f_invalidateAll:=true;
   internPaint;
   if F_SearchBar<>nil then
-    F_SearchBar.Invalidate
+    F_SearchBar.Invalidate;
 end;
 
 //Destroy
