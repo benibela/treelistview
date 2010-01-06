@@ -357,7 +357,7 @@ type
     { Protected-Deklarationen}
     InternOptions_tlio:TTreeListInternOptions;
     doubleBuffer:graphics.TBitmap;
-
+    F_LastPaintedWidth, F_LastPaintedHeight: integer;
 
     f_RedrawBlock: longint;
     f_invalidatedItems: TList;
@@ -3603,7 +3603,15 @@ begin
     doubleBuffer.width:=newwidth;
     doubleBuffer.height:=newheight;
     {$endif}
+  end else if ((F_LastPaintedWidth<>width) or (F_LastPaintedHeight<>height)) and not f_invalidateAll then begin
+    //redraw if the size changes and custom drawing is enabled
+    //  this is unnecessary in most cases but in the custom draw methode something
+    //  very strange could be drawn which depends on the size (e.g. an always
+    //  centerd water mark)
+    f_invalidateAll:=assigned(F_CustomBgDraw) or Assigned(F_CustomItemDraw);
   end;
+  F_LastPaintedWidth:=width;
+  F_LastPaintedHeight:=height;
   if F_MouseSelectingFocusRectDraw then begin//remove old focus rect
     canvas.Brush.Style:=bsSolid;
     canvas.pen.style:=psSolid;
