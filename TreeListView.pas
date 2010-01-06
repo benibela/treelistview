@@ -16,10 +16,15 @@ unit TreeListView;
 {$endif}
 
 {$ifdef lcl}
-  {$define allowHeaderDragging}  //this needs at least lazarus 9.26
-  {$define allowHeaderVisible}   //this needs at least lazarus 9.27 (SVN, r16817)
+  {$define allowHeaderDragging}  //header section can only be dragged by the user if this is defined,
+                                 //it needs at least lazarus 9.26
+  {$define allowHeaderVisible}   //the visibility of header section can only be changed by the user if this
+                                 //is defined; it needs at least lazarus 9.27 (SVN, r16817)
 {$endif}
-{$ifdef lcl}{$define openOwnPopupMenu}{$endif} //disable if you get 2 popupmenus (it is necessary in some lcl versions)
+{$ifdef lcl}
+  {$define openOwnPopupMenu}     //disable if you get 2 popupmenus (it is necessary in some lcl versions)
+{$endif}
+{$define useRealClipping}        //old Lazarus/fpc don't support clipping (should work with (Lazarus  >= 19742 (0.9.27) and fpc >2.3.1) or (Lazarus > 20731 (0.9.27)))
 
 interface
 
@@ -747,7 +752,6 @@ uses LResources; //for icon
 const HeaderItemDistance=2; //Distance between Header and first drawn item
       LEFT_TEXT_PADDING=3;
       LINE_DISTANCE=15;
-      EXPANDING_BUTTON_WIDTH=9;
       {$IFNDEF lcl}
       LM_USER=WM_USER;
       {$ENDIF}
@@ -1683,21 +1687,56 @@ procedure TTreeListItem.Paint(const hierarchyStack: TItemHierarchyStack);
 var i,ynew,yold,recordId:integer;
     defaultDraw:boolean;
     rec:Trect;
+  //draw the text and images in the tree column
   procedure drawTreeColumnText;
-  var textStartX: longint;
+  var textStartX,imageX: longint;
       drawSearchMark: boolean;
+      {$ifdef useRealClipping}
+      oldClipping:boolean;
+      oldClippingRect:TRect;
+      {$ELSE}
+      tempBitmap: graphics.TBitmap;
+      {$ENDIF}
   begin
     textStartX:=F_Indent*LINE_DISTANCE+F_TreeListView.TreeColumnIndentation;
     drawSearchMark:=TreeListView.f_searchMarkVisible and (self=TreeListView.f_searchMarkItem) and (TreeListView.f_searchMarkCol=0);
+    imageX:=textStartX+rec.left+LEFT_TEXT_PADDING;
     if ImageBitmap<>nil then begin
-      F_TreeListView.Canvas.Draw(textStartX+rec.left+LEFT_TEXT_PADDING,rec.top,ImageBitmap);
+      //draw image from bitmap
+      if imageX+ImageBitmap.Width<=rec.Right then
+        F_TreeListView.Canvas.Draw(imageX,rec.top,ImageBitmap)
+       else if imageX<rec.right then //clip horizontal if the column is too small (don't clip vertically, since the row height is fixed and the images can be fit to it)
+        F_TreeListView.Canvas.CopyRect(rect(imageX,rec.top,rec.Right,rec.top+ImageBitmap.Height),ImageBitmap.Canvas,rect(0,0,rec.right-imageX,ImageBitmap.Height));
       F_TreeListView.drawTextRect(Text,textStartX+ImageBitmap.Width+LEFT_TEXT_PADDING,taLeftJustify, rec, drawSearchMark);
     end else if (F_TreeListView.Images<>nil) and (ImageIndex>-1) then begin
-      F_TreeListView.Images.draw(F_TreeListView.Canvas,textStartX+rec.left+LEFT_TEXT_PADDING,rec.Top,ImageIndex);
+      //draw image from imagelist
+      if imageX+F_TreeListView.Images.Width<=rec.Right then
+         F_TreeListView.Images.draw(F_TreeListView.Canvas,imageX,rec.Top,ImageIndex) //just draw fully
+       else if imageX<rec.right then begin
+         {$ifdef useRealClipping}
+         oldClippingRect:=F_TreeListView.Canvas.ClipRect;
+         oldClipping:=F_TreeListView.Canvas.Clipping;
+         F_TreeListView.Canvas.Clipping:=true;
+         F_TreeListView.Canvas.ClipRect:=rect(rec.left,0,rec.Right, rec.top+F_TreeListView.Images.Height); //only horizontal clipping
+         F_TreeListView.Images.draw(F_TreeListView.Canvas,imageX,rec.Top,ImageIndex);
+         F_TreeListView.Canvas.ClipRect:=oldClippingRect;
+         F_TreeListView.Canvas.Clipping:=oldClipping;
+         {$else}
+         tempBitmap:=graphics.TBitmap.create;
+         try
+           F_TreeListView.Images.GetBitmap(ImageIndex,tempBitmap);
+           F_TreeListView.Canvas.CopyRect(rect(imageX,rec.top,rec.Right,rec.top+tempBitmap.Height),tempBitmap.Canvas,rect(0,0,rec.right-imageX,tempBitmap.Height));
+         finally
+           tempBitmap.free;
+         end;
+         {$endif}
+       end;
       TreeListView.drawTextRect(Text,textStartX+F_TreeListView.Images.Width+LEFT_TEXT_PADDING,taLeftJustify,rec,drawSearchMark);
     end else
+      //draw text only
       TreeListView.drawTextRect(Text,textStartX,taLeftJustify,rec,drawSearchMark);
   end;
+  //draw the tree lines and collapse/expand buttons
   procedure drawTreeColumn;
   var i,tempX:longint;
       tempColor:TColor;
@@ -1741,10 +1780,10 @@ var i,ynew,yold,recordId:integer;
 
     if not defaultDraw then exit;
 
+    tempX:=GetExtendingButtonPos;
     if (yold>F_TreeListView.F_Header.Height)
-       and(rec.right-rec.left>EXPANDING_BUTTON_WIDTH)
+       and(tempX+9<=rec.right)
        and(SubItems.Count>0)  then begin
-      tempX:=GetExtendingButtonPos;
       tempColor:=F_TreeListView.Canvas.brush.Color;
       F_TreeListView.Canvas.pen.Style:=psSolid;
       F_TreeListView.Canvas.pen.Color:=clBlack;
