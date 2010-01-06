@@ -464,6 +464,7 @@ type
     F_HighlightAll: boolean;
     procedure SearchBarSearch(sender: TObject; incremental, backwards: boolean);
     procedure SearchBarClose(Sender: TObject);
+    procedure SearchBarShow(Sender: TObject);
     procedure SearchBarKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure F_SearchBarHighlightChanged(Sender: TObject);
 
@@ -2086,6 +2087,7 @@ end;
 procedure TTreeListView.SearchBarClose(Sender: TObject);
 begin
   UpdateScrollBarPos;
+  UpdateScrollSizeV;
   SetFocus;
 end;
 
@@ -2132,6 +2134,13 @@ procedure TTreeListView.SetOption(const Option: TTreeListViewOption;
 begin
   if active then SetOptions(F_Options+[Option])
   else SetOptions(F_Options-[Option]);
+end;
+
+procedure TTreeListView.SearchBarShow(Sender: TObject);
+begin
+  UpdateScrollBarPos;
+  UpdateScrollSizeV;
+  F_SearchBar.SetFocus;
 end;
 
 procedure TTreeListView.SetBgColor(const AValue: TColor);
@@ -2625,6 +2634,7 @@ begin
     F_SearchBar.OnKeyDown:=SearchBarKeyDown;
     F_SearchBar.OnHighlightChanged:=F_SearchBarHighlightChanged;
     F_SearchBar.OnClose:=SearchBarClose;
+    F_SearchBar.OnShow:=SearchBarShow;
   end;
   F_SearchBar.SubComponents:=[fscCloseButton, fscCaption, fscSelectLocation,
                               fscSearchForward, fscSearchBackwards, fscHighlight, fscStatus];
@@ -3357,13 +3367,12 @@ begin
         PopupMenu.PopUp(cursorPos.X,cursorPos.y);
       end else if (TLMKeyUp(message).CharCode = ord('F')) and (F_SearchBar<>nil) then begin
         shiftState:=KeyDataToShiftState(TLMKeyDown(message).KeyData);
-        if ssCtrl in shiftState then begin
-          F_SearchBar.Visible:=true;
-          F_SearchBar.SetFocus;
-          UpdateScrollBarPos;
-          UpdateScrollSizeV;
-        end else inherited;
-      end else inherited;
+        if ssCtrl in shiftState then
+          F_SearchBar.Show
+        else inherited;
+      end else if (TLMKeyUp(message).CharCode = VK_ESCAPE) and (F_SearchBar<>nil) then
+        F_SearchBar.Hide
+      else inherited;
     else inherited;
   end;
   if nextToFocus<>nil then begin //select or focus

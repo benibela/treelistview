@@ -60,6 +60,7 @@ private
   FCaption: string;
   FOnClose: TNotifyEvent;
   FOnSearch: TSearchEvent;
+  FOnShow: TNotifyEvent;
   FsearchBackwardText: string;
   FSearchForwardText: string;
   FHighlightText:string;
@@ -94,6 +95,7 @@ protected
   {$ifndef fpc}procedure VisibleChanging; override; {$endif}
   procedure DoSearch(incremental, backwards: boolean);
   {$ifdef lcl}procedure ResizeDelayedAutoSizeChildren; override;{$endif}
+  procedure SetVisible(Value: Boolean); override;
 public
   property SearchText: string read GetSearchText; //**<This is the text to search, entered by the user
   property SearchLocation: longint read GetSearchLocation write SetSearchLocation;  //**< Currently selected combobox item
@@ -106,6 +108,7 @@ public
 published
   property OnSearch: TSearchEvent read FOnSearch write FOnSearch; //**<This is called when the text should be searched, e.g. when the user clicks the buttons or types in the edit control
   property OnClose: TNotifyEvent read FOnClose write FOnClose; //**< This is called when the search bar is closed (close button, or escape key)
+  property OnShow: TNotifyEvent read FOnShow write FOnShow; //**< This is called when the search bar is opened (setvisible/show)
   property OnHighlightChanged: TNotifyEvent read FHighlightChanged write FHighlightChanged;//**< Called when the highlight button is pressed
   property OnKeyDown; //**< Typical OnKeyDown-event. Setting key:=0, will prevent the default handling
 
@@ -368,7 +371,7 @@ procedure TSearchBar.VisibleChanging;
 begin
   moveComponents;
   FOldHeight:=Height;
-  inherited Resize;
+  inherited VisibleChanging;
 end;
 {$endif}
   
@@ -384,6 +387,17 @@ begin
   //this is the first time the size of the caption label is known!
   updateComponents;
 end;
+
+procedure TSearchBar.SetVisible(Value: Boolean);
+var changed: boolean;
+begin
+  changed:=Visible<>value;
+  inherited SetVisible(Value);
+  if changed then
+    if not Visible and assigned(OnClose) then OnClose(self)
+    else if  Visible and assigned(OnShow) then OnShow(self);
+end;
+
 {$endif}
 
 procedure TSearchBar.setFocus;
@@ -450,4 +464,5 @@ initialization
 {$endif}
 
 end.
-
+
+
