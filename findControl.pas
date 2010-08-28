@@ -97,7 +97,7 @@ protected
   procedure moveComponents;
   {$ifdef lcl}
   procedure DoOnResize; override;
-  procedure ResizeDelayedAutoSizeChildren; override;
+ // procedure ResizeDelayedAutoSizeChildren; override;
   procedure SetVisible(Value: Boolean); override;
   {$else}
   procedure VisibleChanging; override;
@@ -373,12 +373,12 @@ begin
   inherited DoOnResize;
 end;
 
-procedure TSearchBar.ResizeDelayedAutoSizeChildren;
+{procedure TSearchBar.ResizeDelayedAutoSizeChildren;
 begin
   inherited ResizeDelayedAutoSizeChildren;
   //this is the first time the size of the caption label is known!
   updateComponents;
-end;
+end;}
 
 procedure TSearchBar.SetVisible(Value: Boolean);
 var changed: boolean;
