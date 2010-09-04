@@ -466,6 +466,7 @@ type
     f_colorSearchMark: tcolor;
     f_colorSearchMarkField: tcolor;
     F_SearchBar: TSearchBar;
+    F_NewSearchBarFindState: TFindState;
     F_HighlightAll: boolean;
     procedure SearchBarSearch(sender: TObject; incremental, backwards: boolean);
     procedure SearchBarClose(Sender: TObject);
@@ -2291,7 +2292,7 @@ begin
   if F_SearchBar.SearchLocation>=searchLocations.count then
     exit;
   searchOptions:=cardinal(searchLocations.Objects[F_SearchBar.SearchLocation]);
-  SearchBar.FindState:= search(F_SearchBar.SearchText,searchOptions,backwards,incremental);
+  F_NewSearchBarFindState:=search(F_SearchBar.SearchText,searchOptions,backwards,incremental);
 end;
 
 function TTreeListView.DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
@@ -2675,6 +2676,7 @@ begin
     F_SearchBar.OnClose:=SearchBarClose;
     F_SearchBar.OnShow:=SearchBarShow;
   end;
+  F_NewSearchBarFindState := SearchBar.FindState;
   F_SearchBar.SubComponents:=[fscCloseButton, fscCaption, fscSelectLocation,
                               fscSearchForward, fscSearchBackwards, fscHighlight, fscStatus];
   F_SearchBar.SearchLocations.Clear;
@@ -3622,7 +3624,7 @@ begin
     canvas.DrawFocusRect(F_MouseSelectingFocusRect);
     F_MouseSelectingFocusRectDraw:=false;
   end;
-  if (f_invalidatedItems.count>0) or f_invalidateAll then
+  if (f_invalidatedItems.count>0) or f_invalidateAll or (Assigned(F_SearchBar) and (F_NewSearchBarFindState <> F_SearchBar.FindState)) then
     internDraw();
 
   //small rect at the right side bottom where the scrollbars meet
@@ -3634,6 +3636,8 @@ begin
   canvas.FillRect(outRect);
 
   outRect:=rect(0,F_Header.Height,F_VScroll.Left {$ifndef lcl}-1{$endif},F_HScroll.top{$ifndef lcl}-1{$endif});
+  if Assigned(F_SearchBar) and (F_NewSearchBarFindState <> F_SearchBar.FindState) then
+    F_SearchBar.FindState := F_NewSearchBarFindState;
   if f_bufferComplete then
     canvas.CopyRect(outRect,doubleBuffer.canvas,outRect) //DoubleBuffer ausgeben
   else begin
