@@ -2773,6 +2773,9 @@ begin
     taLeftJustify:
       temp.Left:=temp.left+LEFT_TEXT_PADDING;
   end;
+
+  if (temp.Left >= temp.Right) or (temp.Right <= 0) then exit;
+
   if not highlightText then begin
     case align of
       taCenter: flags:=flags or DT_CENTER;
