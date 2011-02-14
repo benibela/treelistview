@@ -320,22 +320,48 @@ type
   TEventHeaderControl=TCustomHeaderControl; //**<@exclude
   {$endif}
 
-  {** @abstract This is the main TreeListView-class
-      You should never need to @noAutoLink create an object of a different class of this file @br
-      Example (use in FormCreate), which creates two items one called 'Item' and one called
+  {** @abstract This is the main TreeListView-class and the only class you need to @noAutoLink create yourself. @br
+      Simple Example (use in FormCreate), which creates two @noAutoLink(items) one called 'Item' and one called
       'Child' where latter shows the value 'Property' in the second column (the tree with the
       names will be in the first column):
   @longCode(#
+         //Standard component creation
          List:=TTreeListView.create(self);
          List.Parent:=self;
          List.Align:=alClient;
+         //Create Columns
          List.Columns.Clear;
          List.Columns.Add.Text:='A';
          List.Columns.Add.Text:='B';
+         //Create Items
          List.BeginUpdate;
          List.Items.Add('Item').SubItems.Add('Child').RecordItemsText[1]:='Property';
          List.EndUpdate;
       #)
+
+      @br@br
+      Generally, the treelistview shows its @noAutoLink(items) in a 2d record layout, with
+      the vertical @noAutoLink(items) of a treeview and the horizontal @noAutoLink(items) of a listview. @br
+      Former are just called "@noAutoLink(items)", latter are called "record @noAutoLink(items)"; and each
+      record item is associated to a normal item.
+
+      @br@br
+      Creating normal @noAutoLink(items)
+      @br@br
+      The simplest way to @noAutoLink(create) a new item is by calling the method @code(treelistview.Items.Add('text')).@br
+      This will add a new item with text "text" to the first level of the tree.@br
+      If you want to @noAutoLink(create) an item on a deeper level of the tree i.e. as sub item to a given parent item, you can call
+      either @code(treelistview.Items.Add(parent, 'text')) or @code(parent.subitems.add('text');)@br
+      If you're going to add several @noAutoLink(items), you should call @code(treelistview.BeginUpdate) and @code(treelistview.EndUpdate).
+
+
+      @br@br
+      Creating record @noAutoLink(items)
+      @br@br
+      To add a record item to a given @code(item) e.g. to set its text in column @code(i), you can just call @code(item.RecordItemsText[i]:='text';)
+
+
+
   }
   TTreeListView = class(TCustomControl)
   private
