@@ -3070,9 +3070,10 @@ begin
   newvalue:=ClientHeight-F_VScroll.Top-F_HScroll.Height;
   if F_SearchBar<>nil then if F_SearchBar.Visible then
     newvalue:=newvalue - F_SearchBar.Height;
+  if newvalue <= 0 then newvalue:=1;
   F_VScroll.Height:=newvalue;
 
-  F_HScroll.Width:=ClientWidth-F_VScroll.Width;
+  F_HScroll.Width:=Max(1, ClientWidth-F_VScroll.Width);
   newvalue:=ClientHeight-F_HScroll.Height;
   if F_SearchBar<>nil then if F_SearchBar.Visible then
     newvalue:=newvalue - F_SearchBar.Height;
@@ -3620,7 +3621,8 @@ begin
      (tlioDeleting in InternOptions_tlio) or
      (f_items=nil) or
      (f_RedrawBlock>0) or (parent=nil) or
-     (F_SheduledRepaint<>0)  //we will be redrawn later anyways (notice that it isn't possible to draw now and set F_SheduledRepaint to 0 because if we are called from the lcl paint, we can't paint to the whole canvas here)
+     (F_SheduledRepaint<>0)  or//we will be redrawn later anyways (notice that it isn't possible to draw now and set F_SheduledRepaint to 0 because if we are called from the lcl paint, we can't paint to the whole canvas here)
+     (Width <= 0) or (Height <= 0)
      then exit;
 
   f_RedrawBlock:=1000;
