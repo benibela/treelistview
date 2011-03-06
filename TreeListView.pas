@@ -505,6 +505,8 @@ type
     function DoCustomItemDrawEvent(const eventTyp_cdet:TCustomDrawEventTyp;const item:TTreeListItem):boolean;
     function DoCustomRecordItemDrawEvent(const eventTyp_cdet:TCustomDrawEventTyp;const RecordItem:TTreeListRecordItem;const outrec: TRect):boolean;
 
+    procedure EraseBackground(DC: HDC); override;
+
     procedure removeSelection(list: TTreeListItems);
     procedure removeMouseSelection(list: TTreeListItems);
     procedure setMouseSelection(list: TTreeListItems);
@@ -634,7 +636,7 @@ type
     procedure internDraw();
     //**This method will paint all changed items on the screen. This means it will call internDraw to draw all changed item in the double buffer and then copy the changed areas of the double buffer on the screen
     //**@seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
-    procedure internPaint;//shows the changes
+    procedure internPaint(calledFromPaintingEvent: boolean=false);//shows the changes
     //**This is the normal Delphi/Lazarus painting routine called when a paint message is received. You should call it seldom.
     //**@seealso(sheduleInternRepaint) @seealso(internRepaint) @seealso(invalidateAll) @seealso(invalidateItem)
     procedure Paint;override;
@@ -1929,6 +1931,7 @@ begin
   doubleBuffer:=graphics.TBitmap.Create;
   //didn't change anything: DoubleBuffered:=false; //we always use our own double buffer
 
+
   //Fonts
   F_HotTrackFont:=TFont.Create;
   F_HotTrackFont.Color:=clBlue;
@@ -2045,10 +2048,12 @@ begin
   end;
 end;
 
+
 procedure TTreeListView.loaded;
 begin
   inherited loaded;
   UpdateScrollBarPos;
+
 end;
 
 procedure TTreeListView.SetFocused(const AValue: TTreeListItem);
@@ -2338,6 +2343,11 @@ begin
     F_DrawingRecordItemRect:=outrec;
     F_CustomRecordItemDraw(self,eventTyp_cdet,recordItem,result);
   end;
+end;
+
+procedure TTreeListView.EraseBackground(DC: HDC);
+begin
+ ;
 end;
 
 procedure TTreeListView.removeSelection(list: TTreeListItems);
@@ -3428,7 +3438,7 @@ begin
     LM_SIZE:        begin
                       UpdateScrollBarPos;
                       UpdateScrollSize;
-                      internPaint;
+                      internPaint(true);
                       inherited;
                     end;
     LM_ERASEBKGND: message.Result:=1;
@@ -3592,7 +3602,8 @@ begin
   end;
 end;
 
-procedure TTreeListView.internPaint;
+
+procedure TTreeListView.internPaint(calledFromPaintingEvent: boolean=false);
   function sortedrect(x1,y1,x2,y2:longint):TRect;
   begin
     if x1<=x2 then begin
@@ -3624,6 +3635,14 @@ begin
      (F_SheduledRepaint<>0)  or//we will be redrawn later anyways (notice that it isn't possible to draw now and set F_SheduledRepaint to 0 because if we are called from the lcl paint, we can't paint to the whole canvas here)
      (Width <= 0) or (Height <= 0)
      then exit;
+
+  {$IFDEF FPC}{$IFNDEF WINDOWS}{$IFNDEF WIN32}{$IFNDEF LCL_GTK2}
+  if not calledFromPaintingEvent then begin
+    f_invalidateAll:=true;
+    Update;
+    exit;
+  end;
+  {$ENDIF}{$ENDIF}{$ENDIF}{$ENDIF}
 
   f_RedrawBlock:=1000;
   newWidth:=width +128 - Width mod 128;//don't change the size for small control size changes
@@ -3714,7 +3733,7 @@ procedure TTreeListView.Paint;
 begin
   if not f_bufferComplete then
     f_invalidateAll:=true;
-  internPaint;
+  internPaint(true);
   if F_SearchBar<>nil then
     F_SearchBar.Invalidate;
 end;
