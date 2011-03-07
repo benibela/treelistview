@@ -31,6 +31,7 @@ interface
 uses
   SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math,
   findControl
+  {$ifdef lclqt}, qtwidgets{$endif}
   {$ifdef clr},types{$endif}
   {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif};
 
@@ -504,8 +505,6 @@ type
     function DoCustomBackgroundDrawEvent (eventTyp_cdet:TCustomDrawEventTyp):boolean;
     function DoCustomItemDrawEvent(const eventTyp_cdet:TCustomDrawEventTyp;const item:TTreeListItem):boolean;
     function DoCustomRecordItemDrawEvent(const eventTyp_cdet:TCustomDrawEventTyp;const RecordItem:TTreeListRecordItem;const outrec: TRect):boolean;
-
-    procedure EraseBackground(DC: HDC); override;
 
     procedure removeSelection(list: TTreeListItems);
     procedure removeMouseSelection(list: TTreeListItems);
@@ -2345,11 +2344,6 @@ begin
   end;
 end;
 
-procedure TTreeListView.EraseBackground(DC: HDC);
-begin
- ;
-end;
-
 procedure TTreeListView.removeSelection(list: TTreeListItems);
 var i:longint;
 begin
@@ -3636,9 +3630,14 @@ begin
      (Width <= 0) or (Height <= 0)
      then exit;
 
-  {$IFDEF FPC}{$IFNDEF WINDOWS}{$IFNDEF WIN32}{$IFNDEF LCL_GTK2}
+  {$IFDEF FPC}{$IFNDEF WINDOWS}{$IFNDEF WIN32}{$IFNDEF LCLGTK2}
   if not calledFromPaintingEvent then begin
+    {$IFDEF LCLQT}
+    TQtWidget(Handle).setAttribute(4 {QtWA_OpaquePaintEvent}, true);
+    TQtWidget(Handle).setAttribute(9 {QtWA_NoSystemBackground}, true);
+    {$ELSE}
     f_invalidateAll:=true;
+    {$ENDIF}
     Update;
     exit;
   end;
