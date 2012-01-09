@@ -3309,21 +3309,24 @@ begin
       if TLMLBUTTONDOWN(message).YPos<F_HScroll.top then begin
         shiftState:=KeyDataToShiftState(TLMLBUTTONDOWN(message).Keys);
         itemAtPos:=GetItemAtPos(TLMLBUTTONDOWN(message).YPos);
-        if (message.msg=LM_LBUTTONDOWN) and (ExpandMode=emExpandByClick) then begin
+        if (message.msg=LM_LBUTTONDOWN) and (ExpandMode=emExpandByClick) then
           if (itemAtPos<>nil) and
              (TLMLBUTTONDOWN(message).XPos<itemAtPos.GetExtendingButtonPos+9) and
              (TLMLBUTTONDOWN(message).XPos>itemAtPos.GetExtendingButtonPos) then begin
             itemAtPos.Expanded:=not itemAtPos.Expanded;
             //todo: check: if itemAtPos=focused then internRepaint;
-          end;
-        end;
+          end;;
         if (message.msg=LM_LBUTTONDOWN) or (tlvoRightMouseSelects in F_Options) then begin
           F_ClickedItem:=itemAtPos;
           F_RealClickPos:=point(TLMLBUTTONDOWN(message).XPos+F_HScroll.Position,TLMLBUTTONDOWN(message).YPos+F_VScroll.Position*RowHeight);
-          nextToFocus:=itemAtPos;
-          if (tlvoMultiSelect in F_Options) and (nextToFocus<>nil) and (ssCtrl in shiftState) then
-            nextToFocus.Selected:=not nextToFocus.Selected;
-          if F_MouseSelecting<>msNone then begin
+          if itemAtPos <> nil then begin
+            if (message.Msg = LM_LBUTTONDOWN) or not (itemAtPos.Selected) then
+              nextToFocus:=itemAtPos;
+            if (tlvoMultiSelect in F_Options) and (ssCtrl in shiftState) then
+              nextToFocus.Selected:=not nextToFocus.Selected;
+          end else if message.Msg = LM_LBUTTONDOWN then
+              nextToFocus := nil;
+          if (F_MouseSelecting<>msNone) and (nextToFocus = itemAtPos) then begin
             F_MouseSelecting:=msNone;
             setMouseSelection(Items);
           end;
