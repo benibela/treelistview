@@ -2773,7 +2773,8 @@ var temp: TRect;
 
  procedure drawTextDef(s: string);
  begin
-    DrawText(Canvas.Handle,{$IFNDEF CLR}pchar{$endif}(s),length(s), temp,flags);
+   SetBkMode(canvas.Handle, TRANSPARENT);
+   DrawText(Canvas.Handle,{$IFNDEF CLR}pchar{$endif}(s),length(s), temp,flags);
  end;
 
 var
