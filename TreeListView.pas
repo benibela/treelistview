@@ -3306,7 +3306,8 @@ begin
         end;
     end;
     LM_LBUTTONDOWN,LM_RBUTTONDOWN: begin
-      SetFocus;
+      if not (csDesigning in ComponentState) then
+        SetFocus;
       if TLMLBUTTONDOWN(message).YPos<F_HScroll.top then begin
         shiftState:=KeyDataToShiftState(TLMLBUTTONDOWN(message).Keys);
         itemAtPos:=GetItemAtPos(TLMLBUTTONDOWN(message).YPos);
