@@ -238,7 +238,7 @@ type
       //**startY returns the top position of the found item @seealso TTreeListView.GetItemAtPos
       function GetItemAtPos(const listView:TTreeListView;const TestY:integer;var startY:integer):TTreeListItem;
       //**This returns the record item at the given position @seealso TTreeListView.GetRecordItemAtPos
-      function GetRecordItemAtPos(const listView:TTreeListView;const TestX:integer):TTreeListRecordItem;
+      function GetRecordItemAtPos(const listView:TTreeListView;TestX:integer):TTreeListRecordItem;
 
       //**This returns the width of the largest record item in the column id of any sub item
       function GetMaxColumnWidth(const id:longint): longint;
@@ -1529,11 +1529,12 @@ begin
     end ;
 end;
 
-function TTreeListItem.GetRecordItemAtPos(const listView:TTreeListView;const TestX:integer):TTreeListRecordItem;
+function TTreeListItem.GetRecordItemAtPos(const listView:TTreeListView;TestX:integer):TTreeListRecordItem;
 var i,x:integer;
 begin
   Result:=nil;
   x:=0;
+  TestX+=listView.F_HScroll.Position;
   for i:=0 to min(listView.F_Header.Sections.Count-1,RecordItems.Count-1) do begin
     if TestX<x then exit;
     if (x+listView.F_Header.Sections[i].Width>TestX) then begin
