@@ -3343,8 +3343,8 @@ begin
         F_MouseSelecting:=msNone;
         setMouseSelection(Items);
       end;
-      if message.msg=LM_LBUTTONDOWN then begin
-        if F_ClickedItem = GetItemAtPos(TLMLBUTTONDOWN(message).YPos) then begin
+      if message.msg=LM_LBUTTONUP then begin
+        if F_ClickedItem = GetItemAtPos(TLMLButtonUp(message).YPos) then begin
           if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
           if assigned(OnClickAtRecordItem) then begin
             tempRecordItem:=F_ClickedItem.GetRecordItemAtPos(self,TLMLButtonUp(message).XPos);
