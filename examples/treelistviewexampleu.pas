@@ -37,6 +37,7 @@ TExampleForm= class(TCustomForm)
   procedure TLExpanded(sender: TObject; item: TTreeListItem);
   procedure TLSelect(sender: TObject; item: TTreeListItem);
   procedure FormClose(sender: TObject; var Action: TCloseAction);
+  procedure TreeListView1ClickAtItem(sender: TObject; item: TTreeListItem);
 public
     TreeListView1:TTreeListView;
     ImageList: TImageList;
@@ -64,12 +65,21 @@ begin
   Application.Terminate;
 end;
 
+procedure TExampleForm.TreeListView1ClickAtItem(sender: TObject; item: TTreeListItem);
+begin
+  if item = nil then exit;
+  if item.Parent = nil then TTreeListView(sender).Items.RemoveObject(item)
+  else item.Parent.SubItems.RemoveObject(item)
+end;
+
 procedure TExampleForm.ExampleFormShow(Sender: TObject);
 begin
   TreeListView1.createSearchBar();
 end;
 
 procedure TExampleForm.TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
+var
+  i: TTreeListItem;
 begin
   Caption:=item.parent.Text + ' clicked on: '+item.Text;
 end;
@@ -128,7 +138,7 @@ begin
   TreeListView1.OnItemCollapsed:=TLCollapsed;
   TreeListView1.OnSelect:=TLSelect;
   TreeListView1.OnClickAtRecordItem:=TLClickRecordItem;
-
+  TreeListView1.OnClickAtItem:=TreeListView1ClickAtItem;
 
   TreeListView1.Columns.clear;
   TreeListView1.Columns.add.Text:='Column 1';
