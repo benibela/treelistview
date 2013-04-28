@@ -68,8 +68,9 @@ end;
 procedure TExampleForm.TreeListView1ClickAtItem(sender: TObject; item: TTreeListItem);
 begin
   if item = nil then exit;
-  if item.Parent = nil then TTreeListView(sender).Items.RemoveObject(item)
-  else item.Parent.SubItems.RemoveObject(item)
+  //if item.Parent = nil then TTreeListView(sender).Items.RemoveObject(item)
+  //else item.Parent.SubItems.RemoveObject(item)
+  item.RecordItemsText[5]:=inttostr(StrToIntDef(item.RecordItemsText[5], 0) + 1);
 end;
 
 procedure TExampleForm.ExampleFormShow(Sender: TObject);
@@ -160,6 +161,10 @@ begin
     text:='center';
     Width:=100;
     Alignment:=taCenter;
+  end;
+  with TreeListView1.Columns.Add do begin
+    text:='clicked';
+    Width:=45;
   end;
   TreeListView1.Options:=TreeListView1.Options + [tlvoMultiSelect,tlvoHotTrackRecordTextItems,tlvoSorted];
   {$ifdef lcl}
