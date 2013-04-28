@@ -3344,12 +3344,12 @@ begin
         setMouseSelection(Items);
       end;
       if message.msg=LM_LBUTTONUP then begin
-        if F_ClickedItem = GetItemAtPos(TLMLButtonUp(message).YPos) then begin
-          if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
+        if (F_ClickedItem <> nil) and (F_ClickedItem = GetItemAtPos(TLMLButtonUp(message).YPos)) then begin
           if assigned(OnClickAtRecordItem) then begin
             tempRecordItem:=F_ClickedItem.GetRecordItemAtPos(self,TLMLButtonUp(message).XPos);
             if tempRecordItem<>nil then OnClickAtRecordItem(self,tempRecordItem);
           end;
+          if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
         end;
       end {$ifdef openOwnPopupMenu} else if message.msg=LM_RBUTTONUP then begin
         GetCursorPos(cursorPos);
