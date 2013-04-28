@@ -223,6 +223,8 @@ type
 
       function GetRecordItemsText(i: Integer): string;
       procedure SetRecordItemsText(i: Integer; const AValue: string);
+
+      procedure SheduleInternRepaint();
     public
       data:TItemDataRec; //**< This value can be used to store arbitrary integer values
 
@@ -1287,7 +1289,8 @@ end;
 procedure TTreeListRecordItem.SetText(caption: string);
 begin
   F_Text:=caption;
-  f_Parent.TreeListView.invalidateItem(F_Parent);
+  if F_Parent <> nil then
+    F_Parent.SheduleInternRepaint();
 end;
 
 procedure TTreeListRecordItem.selectFont(can: TCanvas);
@@ -1355,7 +1358,7 @@ end;
 }{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}
 
 //Create
-constructor TTreeListItem.Create(const Parent:TTreeListItem;const TreeListView:TTreeListView;const ACaption:string);
+constructor TTreeListItem.Create(const parent: TTreeListItem; const TreeListView: TTreeListView; const ACaption: string);
 begin
   assert(TreeListView<>nil);
   inherited Create;
@@ -1413,6 +1416,15 @@ begin
   else begin
     for j:=RecordItems.Count to i-1 do RecordItems.Add('');
     RecordItems.Add(AValue);
+    SheduleInternRepaint();
+  end;
+end;
+
+procedure TTreeListItem.SheduleInternRepaint;
+begin
+  if F_TreeListView <> nil then begin
+    F_TreeListView.invalidateItem(Self);
+    F_TreeListView.sheduleInternRepaint();
   end;
 end;
 
