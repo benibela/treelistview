@@ -369,15 +369,19 @@ type
   }
   TTreeListView = class(TCustomControl)
   private
+    F_HeaderVisible: boolean;
+    F_ScrollStyle: TScrollStyle;
     procedure SetBgColor(const AValue: TColor);
     procedure SetButtonColor(const AValue: TColor);
     procedure SetColorSearchMark(const AValue: tcolor);
     procedure SetColorSearchMarkField(const AValue: tcolor);
     procedure SetExpandMode(const AValue: TExpandMode);
+    procedure SetHeaderVisible(AValue: boolean);
     procedure SetHorizontalLineColor(const AValue: TColor);
     procedure SetHorizontalLines(const AValue: TLineMode);
     procedure SetRootLineColor(const AValue: TColor);
     procedure SetRootLines(const AValue: TLineMode);
+    procedure SetScrollStyle(AValue: TScrollStyle);
     procedure SetSelectBackColor(const AValue: TColor);
     procedure SetStripedEvenColor(const AValue: TColor);
     procedure SetStripedOddColor(const AValue: TColor);
@@ -697,6 +701,9 @@ type
     property BackGroundColor:TColor read F_BgColor write SetBgColor;
 
     property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to @noAutoLink create new ones
+
+    property Scrollbars: TScrollStyle read F_ScrollStyle write SetScrollStyle  default ssBoth;
+    property HeaderVisible: boolean read F_HeaderVisible write SetHeaderVisible default true;
 
     //Sortierungsereignisse
     property OnCompareItems: TCompareTreeListItemsEvent read F_OnCompareItems write F_OnCompareItems; //**< Event which is called when two items are compared during sorting @br The default sorting is case-insensitive lexicographical on text and numerical on number string parts, every level is @noAutoLink sorted on its own, parents are not changed
@@ -1831,7 +1838,7 @@ var i,ynew,yold,recordId:integer;
     if not defaultDraw then exit;
 
     tempX:=GetExtendingButtonPos;
-    if (yold>F_TreeListView.F_Header.Height)
+    if (yold>F_TreeListView.F_VScroll.Top)
        and(tempX+9<=rec.right)
        and(SubItems.Count>0)  then begin
       tempColor:=F_TreeListView.Canvas.brush.Color;
@@ -1865,7 +1872,7 @@ begin
   yold:=F_TreeListView.DrawingYPos;
   ynew:=yold+F_TreeListView.RowHeight;
   if defaultDraw then
-    if ynew>F_TreeListView.F_Header.Height then begin
+    if ynew>F_TreeListView.F_VScroll.Top then begin
       //clearing
       F_TreeListView.Canvas.FillRect(rect(0,yold,F_TreeListView.doubleBuffer.width,ynew));
 
@@ -2006,6 +2013,7 @@ begin
   F_Header:=THeaderControl.Create(self);
   F_Header.Align:=alNone;
   F_Header.Visible:=true;
+  F_HeaderVisible:=true;
   with F_Header.Sections.Add do begin
     Caption:='';
     Width:=1000;
@@ -2031,6 +2039,7 @@ begin
   F_Header.OnSectionEndDrag:=_HeaderSectionEndDrag;{$endif}
   F_Header.parent:=Self;
 
+  F_ScrollStyle:=ssBoth;
 
   //Scrollbar initialisieren
   F_VScroll:=TScrollbar.Create(self);
@@ -2278,6 +2287,16 @@ begin
   sheduleInternRepaint();
 end;
 
+procedure TTreeListView.SetHeaderVisible(AValue: boolean);
+begin
+  if F_HeaderVisible=AValue then Exit;
+  F_HeaderVisible := AValue;
+  F_Header.Visible := F_HeaderVisible;
+  UpdateScrollBarPos;
+  UpdateScrollSize;
+  sheduleInternRepaint();
+end;
+
 procedure TTreeListView.SetHorizontalLineColor(const AValue: TColor);
 begin
   if F_HorizontalLineColor=AValue then exit;
@@ -2303,6 +2322,15 @@ procedure TTreeListView.SetRootLines(const AValue: TLineMode);
 begin
   if F_RootLines=AValue then exit;
   F_RootLines:=AValue;
+  sheduleInternRepaint();
+end;
+
+procedure TTreeListView.SetScrollStyle(AValue: TScrollStyle);
+begin
+  if F_ScrollStyle=AValue then Exit;
+  F_ScrollStyle:=AValue;
+  UpdateScrollBarPos;
+  UpdateScrollSize;
   sheduleInternRepaint();
 end;
 
@@ -2420,7 +2448,7 @@ end;
 
 function TTreeListView.GetTopPos:integer;
 begin
-  result:=HeaderItemDistance+F_Header.Height-F_VScroll.Position*RowHeight;
+  result:=HeaderItemDistance+F_VScroll.Top-F_VScroll.Position*RowHeight;
 end;
 
 procedure TTreeListView.SetColumns(const value:THeaderSections);
@@ -2764,9 +2792,9 @@ end;
 function TTreeListView.RealControlHeight(c: Twincontrol): longint;
 var r:TRect;
 begin
+  if not c.IsVisible then exit(0);
   {$ifdef android}
-  if not c.IsVisible then exit(0)
-  else exit(c.Height);
+  exit(c.Height);
   {$endif}
   GetWindowRect(c.Handle,r);
   result:=r.bottom-r.top;
@@ -2776,13 +2804,13 @@ function TTreeListView.RealClientHeight: longint;
 begin
   result:=ClientHeight-RealControlHeight(F_Header)-HeaderItemDistance;
   if F_HScroll.Visible then result:=result-RealControlHeight(F_HScroll);
-  if F_SearchBar <>nil then if F_SearchBar.Visible then result:=result-RealControlHeight(F_SearchBar);
+  if F_SearchBar <>nil then result:=result-RealControlHeight(F_SearchBar);
 end;
 
 procedure TTreeListView.DrawAlignDotLine(x,y:integer;const x2,y2:integer;const color:TColor);
 var F_HeaderHeight:integer;
 begin
-  F_HeaderHeight:=F_Header.Height;
+  F_HeaderHeight:=F_VScroll.Top;
   if y2<F_HeaderHeight then exit;
   if y<F_HeaderHeight then y:=F_HeaderHeight;
   {$R-}
@@ -3098,25 +3126,30 @@ begin
 end;
 
 procedure TTreeListView.UpdateScrollBarPos;
-var newvalue: longint;
+var realHeight: longint;
 begin
   if (tlioDeleting in InternOptions_tlio) or
      (tlioUpdating in InternOptions_tlio) or
      (f_RedrawBlock>0) then exit;
 
-  F_VScroll.Left:=ClientWidth-F_VScroll.Width;
-  F_VScroll.Top:=F_Header.Height;
-  newvalue:=ClientHeight-F_VScroll.Top-F_HScroll.Height;
-  if F_SearchBar<>nil then if F_SearchBar.Visible then
-    newvalue:=newvalue - F_SearchBar.Height;
-  if newvalue <= 0 then newvalue:=1;
-  F_VScroll.Height:=newvalue;
+  F_HScroll.Visible := (F_ScrollStyle in [ssHorizontal, ssBoth])
+                       or ((F_ScrollStyle in [ssAutoHorizontal, ssAutoBoth]) and F_HScroll.Enabled);
+  F_VScroll.Visible := (F_ScrollStyle in [ssVertical, ssBoth])
+                       or ((F_ScrollStyle in [ssAutoVertical, ssAutoBoth]) and F_VScroll.Enabled);
 
-  F_HScroll.Width:=Max(1, ClientWidth-F_VScroll.Width);
-  newvalue:=ClientHeight-F_HScroll.Height;
+  RealHeight := ClientHeight;
   if F_SearchBar<>nil then if F_SearchBar.Visible then
-    newvalue:=newvalue - F_SearchBar.Height;
-  F_HScroll.Top:=newvalue;
+    realheight:=realheight - F_SearchBar.Height;
+  if F_HScroll.Visible then realheight := realheight - F_HScroll.Height;
+
+  if F_VScroll.Visible then F_VScroll.Left:=ClientWidth-F_VScroll.Width
+  else F_VScroll.Left := ClientWidth;
+  if F_HeaderVisible then F_VScroll.Top:=F_Header.Height
+  else F_VScroll.Top:=0;
+  F_VScroll.Height:=max(1, realHeight - F_VScroll.top);
+
+  F_HScroll.Top:=realHeight;
+  F_HScroll.Width:=Max(1, F_VScroll.Left);
 
   if F_Header.left<>-F_HScroll.Position then
     F_Header.left:=-F_HScroll.Position;
@@ -3168,6 +3201,7 @@ begin
     F_HScroll.Position:=0;
     F_HScroll.Enabled:=false;
   end;
+  if F_HScroll.Enabled <> F_HScroll.Visible then UpdateScrollBarPos;
 end;
 
 procedure TTreeListView.UpdateScrollSizeV;
@@ -3190,6 +3224,7 @@ begin
     F_VScroll.Enabled:=false;
   end;
   //F_VScroll.PageSize:=(ClientHeight-F_HScroll.Height*3-F_Header.Height) div (F_VScroll.Max - F_VScroll.Min + 1);
+  if F_VScroll.Enabled <> F_VScroll.Visible then UpdateScrollBarPos;
 end;
 
 procedure TTreeListView.selectRange(a, b: TTreeListItem;mouseSelect:boolean=false);
@@ -3339,7 +3374,7 @@ begin
       end;
 
 
-      if (TLMMouseMove(message).XPos<F_VScroll.Left) and (TLMMouseMove(message).YPos>F_Header.Height)
+      if (TLMMouseMove(message).XPos<F_VScroll.Left) and (TLMMouseMove(message).YPos>F_VScroll.Top)
          and (TLMMouseMove(message).YPos<F_HScroll.Top) then
         tempRecordItem:=GetRecordItemAtPos(TLMMouseMove(message).XPos,TLMMouseMove(message).YPos)
        else
@@ -3623,7 +3658,7 @@ begin
         pen.Style:=psClear;
         brush.Style:=bsSolid;
         brush.color:=F_BgColor;
-        FillRect(rect(0,F_Header.Height,doubleBuffer.Width,doubleBuffer.Height));
+        FillRect(rect(0,F_VScroll.Top,doubleBuffer.Width,doubleBuffer.Height));
       end;
 
       //Items
@@ -3654,10 +3689,10 @@ begin
             lmSolid: begin
                        pen.color:=VerticalLineColor;
                        pen.Style:=psSolid;
-                       MoveTo(xpos,F_Header.Height);
+                       MoveTo(xpos,F_VScroll.Top);
                        LineTo(xpos,doubleBuffer.Height);
                      end;
-            lmDot:   DrawAlignDotLine(xpos,F_Header.Height,xpos,doubleBuffer.Height,VerticalLineColor);
+            lmDot:   DrawAlignDotLine(xpos,F_VScroll.Top,xpos,doubleBuffer.Height,VerticalLineColor);
           end;
         end;
       end;
@@ -3757,7 +3792,7 @@ begin
   if (F_SearchBar<>nil) and (f_searchbar.Visible) then dec(outRect.Bottom, F_SearchBar.Height);
   canvas.FillRect(outRect);
 
-  outRect:=rect(0,F_Header.Height,F_VScroll.Left {$ifndef lcl}-1{$endif},F_HScroll.top{$ifndef lcl}-1{$endif});
+  outRect:=rect(0,F_VScroll.Top,F_VScroll.Left {$ifndef lcl}-1{$endif},F_HScroll.top{$ifndef lcl}-1{$endif});
   if Assigned(F_SearchBar) and (F_NewSearchBarFindState <> F_SearchBar.FindState) then
     F_SearchBar.FindState := F_NewSearchBarFindState;
   if f_bufferComplete then
