@@ -3363,11 +3363,8 @@ begin
           end else Cursor:=crDefault;
           internPaint;
         end;
-
-      if (tlvoDragScrolling in F_Options) and (MK_LBUTTON and message.wParam <> 0) then begin
-        F_RealMousePos:=point(TLMMouseMove(message).XPos+F_HScroll.Position,
-                              TLMMouseMove(message).YPos+F_VScroll.Position*RowHeight);
-        F_VScroll.Position := F_ScrollClickPos - (TLMMouseMove(message).YPos+F_ScrollClickPos*RowHeight - F_RealClickPos.y) div RowHeight;
+      if (tlvoDragScrolling in F_Options) {$ifndef android}and (MK_LBUTTON and message.wParam <> 0){$endif} then begin
+         F_VScroll.Position := F_ScrollClickPos - (TLMMouseMove(message).YPos - RowHeight div 2 + F_ScrollClickPos*RowHeight - F_RealClickPos.y) div RowHeight
       end;
     end;
     LM_LBUTTONDOWN,LM_RBUTTONDOWN: begin
