@@ -702,8 +702,8 @@ type
 
     property Items:TTreeListItems read F_Items write SetItems; //**< All the items, use items.add to @noAutoLink create new ones
 
-    property Scrollbars: TScrollStyle read F_ScrollStyle write SetScrollStyle  default ssBoth;
-    property HeaderVisible: boolean read F_HeaderVisible write SetHeaderVisible default true;
+    property Scrollbars: TScrollStyle read F_ScrollStyle write SetScrollStyle;
+    property HeaderVisible: boolean read F_HeaderVisible write SetHeaderVisible;
 
     //Sortierungsereignisse
     property OnCompareItems: TCompareTreeListItemsEvent read F_OnCompareItems write F_OnCompareItems; //**< Event which is called when two items are compared during sorting @br The default sorting is case-insensitive lexicographical on text and numerical on number string parts, every level is @noAutoLink sorted on its own, parents are not changed
@@ -2082,6 +2082,13 @@ begin
   F_PostMessageTimer.Interval:=25;
   F_PostMessageTimer.Enabled:=false;
   F_PostMessageTimer.OnTimer:=PostMessageTimerTimer;
+
+  F_ScrollStyle := ssNone;
+  F_VScroll.Visible := false;
+  F_HScroll.Visible := false;
+  F_HeaderVisible := false;
+  F_Header.Visible := false;
+  F_Options := F_Options + [tlvoDragScrolling];
   {$endif}
 end;
 
