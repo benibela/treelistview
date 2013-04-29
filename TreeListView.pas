@@ -299,7 +299,8 @@ type
                           tlvoStripInvisibleItems, //**< Controls if invisible items are counted when the control determines if a item is odd or even (if on items are striped, if off positions are striped)
                           tlvoColumnsDragable, //**< Controls if the columns of the header control can be reordered (needs FPC)
                           tlvoSorted, //**< Controls of the items should be @noAutoLink sorted @br Notice that items are only sorted in endUpdate (and the first time tlvoSorted is set), so new inserted or changed items are not automatically sorted until you call endUpdate
-                          tlvoAlwaysFullRepaint //** repaints everything even after a small change
+                          tlvoAlwaysFullRepaint, //** repaints everything even after a small change
+                          tlvoDragScrolling //** The list can be scrolled by dragging an item up and down (like standard Android lists)
                         );
   TTreeListViewOptions=set of TTreeListViewOption;
 
@@ -474,6 +475,7 @@ type
 
     //Inputevents
     F_RealClickPos, F_RealMousePos: TPoint;
+    F_ScrollClickPos: integer; //v_scroll.position, when the mouse button was pressed
     F_LastMouseMove: cardinal;
     F_ClickedItem: TTreeListItem;
     F_MouseSelecting: (msNone,msLeft,msRight);
@@ -3361,6 +3363,12 @@ begin
           end else Cursor:=crDefault;
           internPaint;
         end;
+
+      if (tlvoDragScrolling in F_Options) and (MK_LBUTTON and message.wParam <> 0) then begin
+        F_RealMousePos:=point(TLMMouseMove(message).XPos+F_HScroll.Position,
+                              TLMMouseMove(message).YPos+F_VScroll.Position*RowHeight);
+        F_VScroll.Position := F_ScrollClickPos - (TLMMouseMove(message).YPos+F_ScrollClickPos*RowHeight - F_RealClickPos.y) div RowHeight;
+      end;
     end;
     LM_LBUTTONDOWN,LM_RBUTTONDOWN: begin
       if not (csDesigning in ComponentState) then
@@ -3377,12 +3385,15 @@ begin
           end;;
         if (message.msg=LM_LBUTTONDOWN) or (tlvoRightMouseSelects in F_Options) then begin
           F_ClickedItem:=itemAtPos;
+          F_ScrollClickPos := F_VScroll.Position;
           F_RealClickPos:=point(TLMLBUTTONDOWN(message).XPos+F_HScroll.Position,TLMLBUTTONDOWN(message).YPos+F_VScroll.Position*RowHeight);
           if itemAtPos <> nil then begin
-            if (message.Msg = LM_LBUTTONDOWN) or not (itemAtPos.Selected) then
-              nextToFocus:=itemAtPos;
-            if (tlvoMultiSelect in F_Options) and (ssCtrl in shiftState) then
-              nextToFocus.Selected:=not nextToFocus.Selected;
+            if (shiftState <> []) or not (tlvoDragScrolling in Options) then begin
+              if (message.Msg = LM_LBUTTONDOWN) or not (itemAtPos.Selected) then
+                nextToFocus:=itemAtPos;
+              if (tlvoMultiSelect in F_Options) and (ssCtrl in shiftState) then
+                nextToFocus.Selected:=not nextToFocus.Selected;
+            end;
           end else if message.Msg = LM_LBUTTONDOWN then
               nextToFocus := nil;
           if (F_MouseSelecting<>msNone) and (nextToFocus = itemAtPos) then begin
@@ -3406,6 +3417,8 @@ begin
             if tempRecordItem<>nil then OnClickAtRecordItem(self,tempRecordItem);
           end;
           if assigned(OnClickAtItem) then OnClickAtItem(self,F_ClickedItem);
+          if tlvoDragScrolling in Options then
+            nextToFocus := F_ClickedItem;
         end;
       end {$ifdef openOwnPopupMenu} else if message.msg=LM_RBUTTONUP then begin
         GetCursorPos(cursorPos);
