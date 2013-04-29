@@ -275,7 +275,7 @@ type
       //**Destroy
       destructor Destroy;override;
 
-      property Indent:integer read F_Indent;//**< Level of indentation @br This value is not guaranteed to be correct
+      property Indent:integer read F_Indent;//**< Level of indentation @br This value is not guaranteed to be correct (but it is during paint events)
       function SeemsSelected:boolean;//**< Returns if the items is drawn selected @br When the user selects new items there new selection state can be previewed
       property Expanded:boolean read F_expanded write SetExpand; //**< Specifies if the sub items are currently visible
 
@@ -312,6 +312,7 @@ type
   TCustomBackgroundDrawEvent=procedure (sender:TObject;eventTyp_cdet:TCustomDrawEventTyp;var defaultDraw:Boolean) of object;
   TCustomItemDrawEvent=procedure (sender:TObject;eventTyp_cdet:TCustomDrawEventTyp;item:TTreeListItem;var defaultDraw:Boolean) of object;
   TCustomRecordItemDrawEvent=procedure (sender:TObject;eventTyp_cdet:TCustomDrawEventTyp;recordItem:TTreeListRecordItem;var defaultDraw:Boolean) of object;
+  TCustomRecordItemPositioningEvent = procedure (sender:TObject; visualColumnIndex: integer; recordItem:TTreeListRecordItem; var aposition: TRect) of object;
   TItemEvent=procedure (sender:TObject;item:TTreeListItem) of object;
   TRecordItemEvent=procedure (sender:TObject;recorditem:TTreeListRecordItem) of object;
   TCompareTreeListItemsEvent=procedure (sender: TObject; item1, item2: TTreeListItem; var result: longint)of object;
@@ -470,6 +471,7 @@ type
     F_CustomBgDraw:TCustomBackgroundDrawEvent;
     F_CustomItemDraw:TCustomItemDrawEvent;
     F_CustomRecordItemDraw:TCustomRecordItemDrawEvent;
+    F_CustomRecordItemPositioningEvent: TCustomRecordItemPositioningEvent;
       //details
     F_DrawingEvenItem: boolean;
     F_DrawingYPos: longint;
@@ -718,6 +720,8 @@ type
     property OnCustomBgDraw:TCustomBackgroundDrawEvent read F_CustomBgDraw write F_CustomBgDraw; //**< This is called before/after the items are drawn
     property OnCustomItemDraw:TCustomItemDrawEvent read F_CustomItemDraw write F_CustomItemDraw; //**< This is called before/after an item is drawn @seealso TTreeListItem.PaintTo, TTreeListView.DrawingEvenItem, TTreeListView.DrawingYPos, TTreeListView.DrawingRecordItemRect
     property OnCustomRecordItemDraw:TCustomRecordItemDrawEvent read F_CustomRecordItemDraw write F_CustomRecordItemDraw; //**< This is called before/after any record items is drawn
+
+    property OnCustomRecordItemPositioning: TCustomRecordItemPositioningEvent read F_CustomRecordItemPositioningEvent write F_CustomRecordItemPositioningEvent; //**< This is called when the position of a record item is calculated
 
     //Inputevents
     property OnClickAtRecordItem:TRecordItemEvent read F_ClickAtRecordItem write F_ClickAtRecordItem; //**< Called when the user clicks on a record item
@@ -1889,6 +1893,11 @@ begin
         if recordId>RecordItems.Count-1 then continue;
         rec.left:=F_TreeListView.F_Header.Sections[i].Left-F_TreeListView.F_HScroll.Position;
         rec.right:=rec.left+F_TreeListView.F_Header.Sections[i].Width;
+        if assigned(F_TreeListView.F_CustomRecordItemPositioningEvent) then begin
+          rec.top:=yold;
+          rec.Bottom:=ynew;
+          F_TreeListView.F_CustomRecordItemPositioningEvent(F_TreeListView, i, RecordItems[recordId], rec);
+        end;
         RecordItems[recordId].selectFont(F_TreeListView.Canvas);
         if F_TreeListView.DoCustomRecordItemDrawEvent(cdetPrePaint,RecordItems[recordId],rec) then begin
           if recordId=0 then begin
