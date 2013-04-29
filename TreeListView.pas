@@ -550,6 +550,8 @@ type
 
     //Sonstiges
     function RealControlHeight(c: Twincontrol): longint;
+    function RealBaseClientWidth: longint;
+    function RealBaseClientHeight: longint;
     function RealClientHeight: longint;
     procedure DrawAlignDotLine(x,y:integer;const x2,y2:integer;const color:TColor);
     procedure drawTextRect(s:string;extraIndentation:longint;align:TAlignment; const rec: TRect; searchDraw: boolean);
@@ -1912,7 +1914,7 @@ begin
 
       //draw focus rect
       if F_TreeListView.focused = self then
-        DrawFocusRect( F_TreeListView.Canvas.Handle,rect(0,yold,F_TreeListView.ClientWidth-F_TreeListView.F_VScroll.Width,ynew));
+        DrawFocusRect( F_TreeListView.Canvas.Handle,rect(0,yold,F_TreeListView.F_VScroll.Left,ynew));
 
       //draw horizontal separation lines
       case F_TreeListView.HorizontalLineMode of
@@ -2816,11 +2818,21 @@ begin
   result:=r.bottom-r.top;
 end;
 
+function TTreeListView.RealBaseClientWidth: longint;
+begin
+  result := {$ifdef android}Width{$else}ClientWidth{$endif};
+end;
+
+function TTreeListView.RealBaseClientHeight: longint;
+begin
+  result := {$ifdef android}Height{$else}ClientHeight{$endif};
+end;
+
 function TTreeListView.RealClientHeight: longint;
 begin
-  result:=ClientHeight-RealControlHeight(F_Header)-HeaderItemDistance;
-  if F_HScroll.Visible then result:=result-RealControlHeight(F_HScroll);
-  if F_SearchBar <>nil then result:=result-RealControlHeight(F_SearchBar);
+  result := RealBaseClientHeight - RealControlHeight(F_Header)-HeaderItemDistance;
+  if F_HScroll.Visible then result := result - RealControlHeight(F_HScroll);
+  if F_SearchBar <>nil then result := result - RealControlHeight(F_SearchBar);
 end;
 
 procedure TTreeListView.DrawAlignDotLine(x,y:integer;const x2,y2:integer;const color:TColor);
@@ -3153,13 +3165,13 @@ begin
   F_VScroll.Visible := (F_ScrollStyle in [ssVertical, ssBoth])
                        or ((F_ScrollStyle in [ssAutoVertical, ssAutoBoth]) and F_VScroll.Enabled);
 
-  RealHeight := ClientHeight;
+  RealHeight := RealBaseClientHeight;
   if F_SearchBar<>nil then if F_SearchBar.Visible then
     realheight:=realheight - F_SearchBar.Height;
   if F_HScroll.Visible then realheight := realheight - F_HScroll.Height;
 
-  if F_VScroll.Visible then F_VScroll.Left:=ClientWidth-F_VScroll.Width
-  else F_VScroll.Left := ClientWidth;
+  if F_VScroll.Visible then F_VScroll.Left:=RealBaseClientWidth-F_VScroll.Width
+  else F_VScroll.Left := RealBaseClientWidth;
   if F_HeaderVisible then F_VScroll.Top:=F_Header.Height
   else F_VScroll.Top:=0;
   F_VScroll.Height:=max(1, realHeight - F_VScroll.top);
@@ -3804,7 +3816,7 @@ begin
   canvas.pen.Style:=psClear;
   canvas.brush.Style:=bsSolid;
   canvas.brush.Color:=clBtnFace;
-  outRect:=rect(F_HScroll.left+F_HScroll.Width,F_VScroll.top+F_VScroll.Height,ClientWidth,ClientHeight);
+  outRect:=rect(F_HScroll.left+F_HScroll.Width,F_VScroll.top+F_VScroll.Height,RealBaseClientWidth,RealBaseClientHeight);
   if (F_SearchBar<>nil) and (f_searchbar.Visible) then dec(outRect.Bottom, F_SearchBar.Height);
   canvas.FillRect(outRect);
 
