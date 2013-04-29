@@ -563,7 +563,7 @@ type
     procedure _HScrollChange(Sender: TObject);
     procedure _VScrollChange(Sender: TObject);
 
-    procedure UpdateScrollBarPos;
+    procedure UpdateScrollBarPos; virtual;
   public
     { Public-Deklarationen}
     hotTrackedRecordItem:TTreeListRecordItem; //**<Item currently touched by the mouse
@@ -2747,6 +2747,10 @@ end;
 function TTreeListView.RealControlHeight(c: Twincontrol): longint;
 var r:TRect;
 begin
+  {$ifdef android}
+  if not c.IsVisible then exit(0)
+  else exit(c.Height);
+  {$endif}
   GetWindowRect(c.Handle,r);
   result:=r.bottom-r.top;
 end;
@@ -3653,10 +3657,11 @@ begin
     {$IFDEF LCLQT}
     TQtWidget(Handle).setAttribute(4 {QtWA_OpaquePaintEvent}, true);
     TQtWidget(Handle).setAttribute(9 {QtWA_NoSystemBackground}, true);
+    Update;
     {$ELSE}
     f_invalidateAll:=true;
+    Repaint; //needed for android?, not sure about the other OS
     {$ENDIF}
-    Update;
     exit;
   end;
   {$ENDIF}{$ENDIF}{$ENDIF}{$ENDIF}
