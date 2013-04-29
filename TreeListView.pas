@@ -29,7 +29,7 @@ unit TreeListView;
 interface
 
 uses
-  SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,Menus,math,
+  SysUtils, Classes, Graphics, Controls, Forms, Dialogs,comctrls,stdctrls,ExtCtrls, Menus,math,
   findControl
   {$ifdef lclqt}, qtwidgets{$endif}
   {$ifdef clr},types{$endif}
@@ -564,6 +564,13 @@ type
     procedure _VScrollChange(Sender: TObject);
 
     procedure UpdateScrollBarPos; virtual;
+  protected
+    {$ifdef android}
+    F_PostMessage: TLMessage;
+    F_PostMessageTimer: TTimer;
+    procedure PostMessageTimerTimer(Sender: TObject);
+    {$endif}
+    procedure internPostMessage(Msg: Cardinal; WParam: WParam); //**< Wrapper around PostMessage. PM does not seem to work on Android
   public
     { Public-Deklarationen}
     hotTrackedRecordItem:TTreeListRecordItem; //**<Item currently touched by the mouse
@@ -2058,6 +2065,13 @@ begin
     items.Add('More...').SubItems.Add('More...').SubItems.Add('More...');
     EndUpdate;
   end;
+
+  {$ifdef android}
+  F_PostMessageTimer := TTimer.Create(self);
+  F_PostMessageTimer.Interval:=25;
+  F_PostMessageTimer.Enabled:=false;
+  F_PostMessageTimer.OnTimer:=PostMessageTimerTimer;
+  {$endif}
 end;
 
 
@@ -2106,7 +2120,7 @@ begin
 //todo
 end;
 
-function TTreeListView.getTopItem: TTreeListItem;
+function TTreeListView.GetTopItem: TTreeListItem;
 begin
   if (F_TopItem=nil) then begin
     //y*RowHeight+GetTopPos>-RowHeight;
@@ -2225,6 +2239,7 @@ begin
   UpdateScrollSizeV;
   F_SearchBar.SetFocus;
 end;
+
 
 procedure TTreeListView.SetBgColor(const AValue: TColor);
 begin
@@ -3063,7 +3078,7 @@ begin
   //the background
   if F_SheduledHScroll=0 then begin
     F_SheduledHScroll:=GetTickCount;
-    PostMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_HSCROLL,0);
+    internPostMessage(LM_USER_SHEDULED_EVENT,EVENT_HSCROLL);
   end else if F_SheduledHScroll+20<GetTickCount then begin
     //force repaint with at least 50 fps
     SendMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_HSCROLL,0);
@@ -3104,6 +3119,30 @@ begin
   if F_Header.left<>-F_HScroll.Position then
     F_Header.left:=-F_HScroll.Position;
 end;
+
+procedure TTreeListView.internPostMessage(Msg: Cardinal; WParam: WParam);
+begin
+  {$ifndef android}
+  PostMessage(Handle, Msg, WParam, 0);
+  {$else}
+  F_PostMessage.Msg := Msg;
+  F_PostMessage.WParam := WParam;
+  F_PostMessage.LParam := 0;
+  F_PostMessageTimer.Enabled := true;
+  {$endif}
+end;
+
+{$ifdef android}
+procedure TTreeListView.PostMessageTimerTimer(Sender: TObject);
+var temp: TLMessage;
+begin
+  if F_PostMessage.Msg <> 0 then begin
+    WndProc(F_PostMessage);
+    F_PostMessage.Msg:=0;
+    F_PostMessageTimer.Enabled:=false;
+  end;
+end;
+{$endif}
 
 procedure TTreeListView.UpdateScrollSizeH;
 var
@@ -3248,9 +3287,9 @@ begin
       {$else}
       F_MouseWheelDelta:=F_MouseWheelDelta+TWMMouseWheel(message).WheelDelta;
       {$endif}
-      PostMessage(self.Handle,LM_USER_SHEDULED_EVENT,EVENT_MOUSE_SCROLL,0); //draw only after all wheel messages are processed
+      internPostMessage(LM_USER_SHEDULED_EVENT,EVENT_MOUSE_SCROLL); //draw only after all wheel messages are processed
     end;
-    LM_USER_SHEDULED_EVENT:
+    LM_USER_SHEDULED_EVENT: begin
       case message.WParam of
         EVENT_REPAINT:
           if F_SheduledRepaint <> 0 then
@@ -3269,6 +3308,7 @@ begin
           if assigned(F_HScrollBarChange) then F_HScrollBarChange(F_HScroll);
         end;
       end;
+    end;
     LM_MOUSEMOVE: begin
       inherited;
       if (GetTickCount>F_LastMouseMove) and (GetTickCount-F_LastMouseMove<20) then exit;
@@ -3495,7 +3535,7 @@ begin
      exit; //no handle to post sheduling message to (and painting makes no sense anyways if we aren't visible)
   if F_SheduledRepaint=0 then begin
     F_SheduledRepaint:=GetTickCount;
-    PostMessage(Handle,LM_USER_SHEDULED_EVENT,EVENT_REPAINT,0);
+    internPostMessage(LM_USER_SHEDULED_EVENT,EVENT_REPAINT);
   end else if F_SheduledRepaint+20<GetTickCount then begin
     //force repaint with at least 50 fps
     internRepaint();
