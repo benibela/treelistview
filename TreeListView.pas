@@ -372,6 +372,7 @@ type
   private
     F_HeaderVisible: boolean;
     F_ScrollStyle: TScrollStyle;
+    function GetTopItemVisualIndex: integer;
     procedure SetBgColor(const AValue: TColor);
     procedure SetButtonColor(const AValue: TColor);
     procedure SetColorSearchMark(const AValue: tcolor);
@@ -665,6 +666,7 @@ type
     property TopPos:integer read GetTopPos; //**< V-Scrollposition calculated in pixels (=position of Items[0])
     property TopItem: TTreeListItem read GetTopItem write SetTopItem; //**< Visible item with the least real index (can be nil)
     property TopItemIsEvenItem: boolean read GetTopItemEven; //**< Is the top item even (used for striping)
+    property TopItemVisualIndex: integer read GetTopItemVisualIndex; //**< Index of the top item, if all visible items were in a single list
     property DrawingEvenItem: boolean read F_DrawingEvenItem; //**< Is the currently drawn item even (only valid during custom draw events, having this as property prevents parameter cluttering)
     property DrawingYPos: longint read F_DrawingYPos; //**< Y-Position of the currently drawn item (only valid during custom draw events, having this as property prevents parameter cluttering)
     property DrawingRecordItemRect: TRect read F_DrawingRecordItemRect; //**< boundaries of the currently drawn record item (only valid during custom draw events, having this as property prevents parameter cluttering)
@@ -2275,6 +2277,11 @@ begin
   if F_BgColor=AValue then exit;
   F_BgColor:=AValue;
   sheduleInternRepaint();
+end;
+
+function TTreeListView.GetTopItemVisualIndex: integer;
+begin
+  result := F_VScroll.Position;
 end;
 
 procedure TTreeListView.SetButtonColor(const AValue: TColor);
