@@ -6,8 +6,6 @@ The TreeListView is the combination of a listview and treeview, i.e. a list of i
 See my webpage for the detailed [treelistview documentation](http://www.benibela.de/components_en.html#treelistview).
 
 
-![normal, Linux](http://www.benibela.de/img/components/treelistview2.png)
-
-![custom drawn](http://www.benibela.de/img/components/treelistview2.png)
+![normal, Linux](http://www.benibela.de/img/components/treelistview2.png)  ![custom drawn](http://www.benibela.de/img/components/treelistview2.png)
 
 
