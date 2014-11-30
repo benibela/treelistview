@@ -1939,7 +1939,9 @@ begin
   if self=TreeListView.focused then TreeListView.focused:=nil;
   if self=TreeListView.F_TopItem then TreeListView.F_TopItem:=nil;
   if Selected then dec(TreeListView.f_selCount);
+  F_RecordItems.onListEvent := nil;
   F_RecordItems.free;
+  F_RecordItems.onListEvent := nil;
   F_SubItems.free;
   inherited;
 end;
