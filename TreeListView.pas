@@ -1941,7 +1941,7 @@ begin
   if Selected then dec(TreeListView.f_selCount);
   F_RecordItems.onListEvent := nil;
   F_RecordItems.free;
-  F_RecordItems.onListEvent := nil;
+  F_SubItems.onListEvent := nil;
   F_SubItems.free;
   inherited;
 end;
