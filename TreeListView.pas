@@ -866,9 +866,11 @@ begin
 end;
 procedure TObjectList.Clear;
 begin
+  BeginEdit;
   FreeObjects;
   count:=0;
   if assigned(onListEvent) then onListEvent(self,levClear);
+  EndEdit;
 end;
 procedure TObjectList.Delete(Index: Integer);
 begin
@@ -892,8 +894,8 @@ begin
 end;
 function TObjectList.Remove(Item: TObject): Integer;
 begin
-  item.free;
   result:=inherited remove(item);
+  item.free;
   if assigned(onListEvent) then onListEvent(self,levDelete);
 end;
 procedure TObjectList.Sort(Compare: TListSortCompare);
@@ -1936,13 +1938,15 @@ end;
 //Destroy
 destructor TTreeListItem.Destroy;
 begin
+  TreeListView.BeginMultipleUpdate;
   if self=TreeListView.focused then TreeListView.focused:=nil;
   if self=TreeListView.F_TopItem then TreeListView.F_TopItem:=nil;
   if Selected then dec(TreeListView.f_selCount);
-  F_RecordItems.onListEvent := nil;
+  F_RecordItems.onListEvent := nil; //should be unnecessary now, but it is a little bit faster
   F_RecordItems.free;
-  F_SubItems.onListEvent := nil;
+  F_SubItems.onListEvent := nil;    //dito
   F_SubItems.free;
+  TreeListView.EndMultipleUpdate;
   inherited;
 end;
 
