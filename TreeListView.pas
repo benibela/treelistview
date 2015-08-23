@@ -98,6 +98,8 @@ type
 
     //**This adds an item with the given caption to this list
     function Add(caption:string=''):TTreelistItem;overload;
+    //**This adds an item with the given record texts
+    function Add(captions:array of string):TTreelistItem;overload;
     //**This adds an item with the given parent and caption @br
     //**If parent is @nil the item is added to this list, otherwise to the list parent.subitems
     function Add(Parent:TTreeListItem;caption:string=''):TTreelistItem;overload;
@@ -218,7 +220,8 @@ type
       procedure SetSelections(realSelected, mouseSelection:boolean);
 
       procedure SetSubItems(const value:TtreeListItems);
-      procedure SetRecordItems(const value:TRecordItemList);
+      procedure SetRecordItems(const value:TRecordItemList);  overload;
+      procedure SetRecordItems(const texts: array of string); overload;
       procedure SetExpand(const expanded:boolean);
 
       function GetRecordItemsText(i: Integer): string;
@@ -1001,7 +1004,7 @@ begin
   if assigned(onListEvent) then onListEvent(self,levSort);
 end;
 
-constructor TTreeListItems.Create(parent:TTreeListItem;const TreeListView:TTreeListView);
+constructor TTreeListItems.create(parent: TTreeListItem; const TreeListView: TTreeListView);
 begin
   inherited Create(TreeListView._SubItemListEvent);
   F_Parent:=parent;
@@ -1015,13 +1018,20 @@ begin
   inherited add(result);
 end;
 
+function TTreeListItems.Add(captions: array of string): TTreelistItem;
+begin
+  Result:=TTreeListItem.Create(F_Parent,F_TreeListView);
+  Result.SetRecordItems(captions);
+  inherited add(result);
+end;
+
 function TTreeListItems.Add(Parent:TTreeListItem;caption:string):TTreelistItem;
 begin
   if Parent=nil then result:=Add(caption)
   else result:=Parent.SubItems.Add(caption);
 end;
 
-function tTreeListItems.GetRealItemCount(const countTyp:TRealItemCounting ) :integer;
+function TTreeListItems.GetRealItemCount(const countTyp: TRealItemCounting): integer;
 var i:integer;
 begin
   result:=1;
@@ -1032,7 +1042,7 @@ begin
       inc(result);
 end;
 
-function tTreeListItems.RealIndexOf(const item:ttreeListItem;const countTyp:TRealItemCounting):integer;
+function TTreeListItems.RealIndexOf(const item: ttreeListItem; const countTyp: TRealItemCounting): integer;
 var pos:integer;
     gefunden:boolean;
   procedure RealIndexOfRek(const newself:TTreeListItem); //Durchsucht rekursiv alle SubListen der SubItems
@@ -1215,7 +1225,7 @@ begin
   end;
 end;
 
-function tTreeListItems.GetItemWithRealIndex(index:integer;const countTyp:TRealItemCounting):TTreeListItem;
+function TTreeListItems.GetItemWithRealIndex(index: integer; const countTyp: TRealItemCounting): TTreeListItem;
   function GetItemWithRealIndexRek(const nself:TTreeListItems;var index:integer):TTreeListItem;
   var i:integer;
   begin
@@ -1518,6 +1528,18 @@ end;
 procedure TTreeListItem.SetRecordItems(const value:TRecordItemList);
 begin
   F_RecordItems.Assign(value);
+end;
+
+procedure TTreeListItem.SetRecordItems(const texts: array of string);
+var
+  i: Integer;
+begin
+  while F_RecordItems.Count > length(texts) do
+    F_RecordItems.Delete(F_RecordItems.Count - 1);
+  for i:=0 to RecordItems.Count  - 1 do
+    RecordItems[i].Text := texts[i];
+  for i:=RecordItems.Count to high(texts) do
+    RecordItems.Add(texts[i]);
 end;
 
 procedure TTreeListItem.SetExpand(const expanded:boolean);
@@ -3918,4 +3940,4 @@ end.
 
 
 
-
+
