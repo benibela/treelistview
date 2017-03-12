@@ -86,8 +86,7 @@ private
   procedure searchEdtKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   procedure searchEdtKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
   procedure highlightClick(Sender: TObject);
-  procedure highlightBtnMouseUp(Sender: TObject; Button: TMouseButton;
-    Shift: TShiftState; X, Y: Integer);
+  procedure highlightBtnMouseUp(Sender: TObject; {%H-}Button: TMouseButton; {%H-}Shift: TShiftState; {%H-}X, {%H-}Y: Integer);
 protected
   closeBtn, searchForwardBtn, searchBackwardBtn, highlightBtn: TSpeedButton;
   captionLbl,statusLabel: TLabel;
@@ -478,4 +477,4 @@ initialization
 
 end.
 
-
+

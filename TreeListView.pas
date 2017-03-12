@@ -2849,7 +2849,7 @@ begin
   {$ifdef android}
   exit(c.Height);
   {$endif}
-  GetWindowRect(c.Handle,r);
+  GetWindowRect(c.Handle,r{%H-});
   result:=r.bottom-r.top;
 end;
 
@@ -3112,7 +3112,7 @@ var NewSortColumn,i:Longint;
 begin
   if not (tlvoSorted in F_Options) then exit;
   if Section=nil then begin
-    GetCursorPos(cursor);
+    GetCursorPos(cursor{%H-});
     cursor:=HeaderControl.ScreenToClient(cursor);
     for i := 0 to HeaderControl.Sections.Count - 1 do
       if (HeaderControl.Sections[i].Left<cursor.x)and
@@ -3516,7 +3516,7 @@ begin
             nextToFocus := F_ClickedItem;
         end;
       end {$ifdef openOwnPopupMenu} else if message.msg=LM_RBUTTONUP then begin
-        GetCursorPos(cursorPos);
+        GetCursorPos(cursorPos{%H-});
         if assigned(PopupMenu) then PopupMenu.PopUp(cursorPos.x,cursorPos.Y);
 
       end{$endif};
