@@ -3139,18 +3139,25 @@ end;
 procedure TTreeListView._HeaderSectionDblClick(
   HeaderControl: TEventHeaderControl; Section: THeaderSection);
 var i,w,maxw:longint;
+  others, sectionindex: Integer;
 begin
   maxw:=0;
+  sectionindex := {$ifdef allowHeaderDragging}section.OriginalIndex{$else}section.Index{$endif};
   for i:=0 to items.count-1 do begin
-    {$ifdef allowHeaderDragging}
-    w:=Items[i].GetMaxColumnWidth(section.OriginalIndex);
-    {$else}
-    w:=Items[i].GetMaxColumnWidth(section.index);
-    {$endif}
+    w:=Items[i].GetMaxColumnWidth(sectionindex);
     if w>maxw then maxw:=w;
   end;
-  if maxw+5>section.Width then section.width:=maxw+5
-  else if Section.width+10>maxw+5 then section.width:=maxw+5;
+
+  others := 0;
+  for i := 0 to Columns.Count - 1 do
+    if Columns[i] <> section then
+      others += Columns[i].Width;
+  maxw := max(maxw, min(ClientWidth - others, HeaderControl.Canvas.TextWidth(section.Text) + 3 {extra padding for border between columns}));
+
+  maxw := maxw + 5; //padding
+  if maxw>section.Width then section.width:=maxw
+  else if Section.width+10>maxw then section.width:=maxw;
+
 end;
 
 procedure TTreeListView._HeaderSectionEndDrag(Sender: TObject);
