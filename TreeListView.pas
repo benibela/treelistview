@@ -3164,6 +3164,8 @@ procedure TTreeListView._HeaderSectionEndDrag(Sender: TObject);
 begin
   //UpdateScrollBarPos; no reason to call this at all, we didn't scroll
   //UpdateScrollSizeH; not really necessary since total size remained the same
+ if Assigned(F_HeaderColumnPopupMenu) and (F_Header.PopupMenu = F_HeaderColumnPopupMenu) then
+    CreateUserColumnVisibilityPopupMenu();
   sheduleInternRepaint;
 end;
 
