@@ -2846,11 +2846,11 @@ function TTreeListView.RealControlHeight(c: Twincontrol): longint;
 var r:TRect;
 begin
   if not c.IsVisible then exit(0);
-  {$ifdef android}
-  exit(c.Height);
+  {$ifndef android}
+  if GetWindowRect(c.Handle,r{%H-}) <> 0 then
+    result:=r.bottom-r.top;
   {$endif}
-  GetWindowRect(c.Handle,r{%H-});
-  result:=r.bottom-r.top;
+  exit(c.Height);
 end;
 
 function TTreeListView.RealBaseClientWidth: longint;
