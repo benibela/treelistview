@@ -624,6 +624,7 @@ type
     //Header
 
     function ColumnFromOriginalIndex(index: longint):  THeaderSection; //**< If the columns can be dragged this will return them in the old order
+    procedure ColumnsAutoSize;
     procedure CreateUserColumnVisibilityPopupMenu(); //**< Creates a popupmenu to hide/show columns @br You need to call this method after every removing/creating of columns, because the TreeListView doesn't known when the columns are changed, since you have direct access to the headercontrol sections.@br This needs FPC
     function serializeColumnWidths: string; //**<save the widths of the columns in a string @seealso deserializeColumnWidths
     function serializeColumnOrder: string; //**<save the order of the columns in a string (needs FPC) @seealso deserializeColumnOrder
@@ -2685,6 +2686,14 @@ begin
     if index <Columns.count then
       result:=Columns[index];
   {$ENDIF}
+end;
+
+procedure TTreeListView.ColumnsAutoSize;
+var
+  i: Integer;
+begin
+  for i := 0 to F_Header.Sections.Count - 1 do
+    _HeaderSectionDblClick(F_Header, F_Header.Sections[i]);
 end;
 
 procedure TTreeListView.CreateUserColumnVisibilityPopupMenu();
