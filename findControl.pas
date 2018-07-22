@@ -305,7 +305,7 @@ var cx:longint;
       end;
       control.Visible:=true;
       {$ifndef lcl}TControlCracker{$endif}(control).Caption:=cap;
-      if tempBitmap.Canvas.TextWidth(cap) > wid+5 then
+      if tempBitmap.Canvas.TextWidth(cap) > wid-5 then
          wid:=tempBitmap.Canvas.TextWidth(cap)+5;
       control.Left:=cx;
       if wid<>-1 then control.Width:=wid;
