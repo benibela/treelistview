@@ -546,7 +546,7 @@ type
 
     procedure setImageList(const images:TImageList);
 
-    procedure SetRowHeight(const newHeight:integer);
+    procedure SetRowHeight(newHeight:integer);
 
     procedure SetHotTrackFont(const value:TFont); //< Set the font used to draw a hottracked item
     procedure SetSelectedFont(const value:TFont); //< Set the font used to draw a selected item
@@ -2104,8 +2104,7 @@ begin
   F_HScroll.TabStop:=false;
   F_HScroll.parent:=self;
 
-  RowHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
-  if font.Height>RowHeight then RowHeight:=font.Height+1;
+  RowHeight := 0;
   //if font.GetTextHeight('ÂB,')>RowHeight then RowHeight:=font.GetTextHeight('ÂB,')+1;
 
   if csDesigning in ComponentState then begin
@@ -2844,8 +2843,13 @@ begin
   F_ImageList:=images;
 end;
 
-procedure TTreeListView.SetRowHeight(const newHeight:integer);
+procedure TTreeListView.SetRowHeight(newHeight:integer);
 begin
+  if newHeight = 0 then begin
+   newHeight:=F_Header.Height-2*GetSystemMetrics(SM_CYEDGE);
+   if font.Height>newHeight then newHeight:=font.Height+1;
+  end;
+
   if newHeight and $1=$1 then F_RowHeight:=newHeight+1
   else F_RowHeight:=newHeight;
 end;
