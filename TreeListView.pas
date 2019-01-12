@@ -33,7 +33,7 @@ uses
   findControl
   {$ifdef lclqt}, qtwidgets{$endif}
   {$ifdef clr},types{$endif}
-  {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif};
+  {$ifdef lcl},LCLType,LCLIntf, LMessages, Lazutf8{$else},windows,messages{$endif};
 
 type
   {$TYPEINFO ON}
@@ -2910,9 +2910,12 @@ var temp: TRect;
     flags: longint;
 
  procedure drawTextDef(s: string);
+ var
+   temps: String;
  begin
    SetBkMode(canvas.Handle, TRANSPARENT);
-   DrawText(Canvas.Handle,{$IFNDEF CLR}pchar{$endif}(s),length(s), temp,flags);
+   temps := {$ifdef windows}UTF8ToWinCP(s){$else}s{$endif};
+   DrawText(Canvas.Handle,{$IFNDEF CLR}pchar{$endif}(temps),length(temps), temp,flags);
  end;
 
 var
