@@ -3926,8 +3926,8 @@ begin
   if not f_bufferComplete then
     f_invalidateAll:=true;
   internPaint(true);
-  if F_SearchBar<>nil then
-    F_SearchBar.Invalidate;
+  //if F_SearchBar<>nil then
+  //  F_SearchBar.Invalidate;
 end;
 
 //Destroy
