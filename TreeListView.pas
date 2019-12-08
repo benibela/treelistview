@@ -2781,19 +2781,25 @@ procedure TTreeListView.deserializeColumnOrder(s: string);
 {$ifdef allowHeaderDragging}
 var i:longint;
     sep: longint;
-    tempOrder: array[0..20] of longint;
+    tempOrder: array of longint;
+    j, n: Integer;
 {$endif}
 begin
 {$ifdef allowHeaderDragging}
+  n := F_Header.Sections.Count;
+  tempOrder := nil;
+  SetLength(tempOrder, n);
   //setting random index can changes other ones, therefore they will be set ascending
   //setlength(tempOrder,F_Header.Sections.Count);
   for i:=0 to high(tempOrder) do
     tempOrder[i]:=i;
   i:=0;
-  while i<F_Header.Sections.Count do begin
+  while i<n do begin
     sep:=pos(',',s);
     if (sep=0) then break;
-    tempOrder[i]:=StrToInt(trim(copy(s,1,sep-1)));
+    j := StrToInt(trim(copy(s,1,sep-1)));
+    if j >= n then j := i;
+    tempOrder[j] := i;
     delete(s,1,sep);
     inc(i);
   end;
