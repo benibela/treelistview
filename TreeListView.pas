@@ -512,7 +512,7 @@ type
     procedure SearchBarSearch(sender: TObject; incremental, backwards: boolean);
     procedure SearchBarClose(Sender: TObject);
     procedure SearchBarShow(Sender: TObject);
-    procedure SearchBarKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure SearchBarKeyDown(Sender: TObject; var Key: Word; {%H-}Shift: TShiftState);
     procedure F_SearchBarHighlightChanged(Sender: TObject);
 
     //Ereignissausösungen
@@ -818,6 +818,10 @@ const HeaderItemDistance=2; //Distance between Header and first drawn item
       EVENT_MOUSE_SCROLL = 2;
       EVENT_HSCROLL = 3;
 
+procedure ignore({%H-}o: TObject); inline;
+begin
+end;
+
 {}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{
 ################################################################################
 ================================================================================
@@ -1000,6 +1004,7 @@ begin
   //sort children
   for i:=0 to count-1 do
     Items[i].SubItems.Sort(CompareFunc);
+  temp := nil;
   SetLength(temp,count);
   mergeSort(0,count-1);
   if assigned(onListEvent) then onListEvent(self,levSort);
@@ -1731,8 +1736,9 @@ procedure TTreeListItem.GetParentHierarchyStack(out stack:TItemHierarchyStack);
 var curItem:TTreeListItem;
 begin
   //TODO: consider using a linked list
-  SetLength(stack.stack,8);
   stack.size:=0;
+  stack.stack := nil;
+  SetLength(stack.stack,8);
   curItem:=self;
   while curItem <> nil do begin
     stack.size:=stack.size+1;
@@ -2223,6 +2229,7 @@ procedure TTreeListView.SearchBarKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 var temp:{$ifdef lcl}TLMKeyDown{$else}TWMKeyDown{$endif};
 begin
+  ignore(sender);
   case key of
     VK_DOWN,VK_UP,VK_NEXT,VK_PRIOR: begin
       temp.msg:={$ifdef lcl}LM_KEYDOWN{$else}WM_KEYDOWN{$endif};
@@ -2236,12 +2243,14 @@ end;
 
 procedure TTreeListView.F_SearchBarHighlightChanged(Sender: TObject);
 begin
+  ignore(sender);
   F_HighlightAll:=F_SearchBar.Highlighting;
   sheduleInternRepaint;
 end;
 
 procedure TTreeListView.SearchBarClose(Sender: TObject);
 begin
+  ignore(sender);
   UpdateScrollBarPos;
   UpdateScrollSizeV;
   SetFocus;
@@ -2294,6 +2303,7 @@ end;
 
 procedure TTreeListView.SearchBarShow(Sender: TObject);
 begin
+  ignore(sender);
   UpdateScrollBarPos;
   UpdateScrollSizeV;
   F_SearchBar.SetFocus;
@@ -2966,6 +2976,7 @@ begin
      end;
 
      //split
+     parts := nil;
      SetLength(parts,0);
      repeat
        SetLength(parts,length(parts)+2);
@@ -3084,6 +3095,7 @@ end;
 
 procedure TTreeListView._SubItemListEvent(list: TObjectList; typ: TListEventTyp);
 begin
+  ignore(list);
   case typ of
     levBeginEdit: BeginMultipleUpdate;
     levEndEdit: EndMultipleUpdate;
@@ -3181,6 +3193,7 @@ end;
 
 procedure TTreeListView._HeaderSectionEndDrag(Sender: TObject);
 begin
+  ignore(sender);
   //UpdateScrollBarPos; no reason to call this at all, we didn't scroll
   //UpdateScrollSizeH; not really necessary since total size remained the same
  if Assigned(F_HeaderColumnPopupMenu) and (F_Header.PopupMenu = F_HeaderColumnPopupMenu) then
@@ -3190,6 +3203,7 @@ end;
 
 procedure TTreeListView._HScrollChange(Sender: TObject);
 begin
+  ignore(sender);
   //GTK2 send a high amount an scroll change events, so lets collect them
   //and draw the changes later
   //It would be possible to repaint the treelistview here, but if we do that
@@ -3208,6 +3222,7 @@ end;
 
 procedure TTreeListView._VScrollChange(Sender: TObject);
 begin
+  ignore(sender);
   UpdateScrollBarPos;
   hotTrackedRecordItem:=nil;
   F_TopItem:=nil;
