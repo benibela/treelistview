@@ -41,6 +41,7 @@ TExampleForm= class(TCustomForm)
 public
     TreeListView1:TTreeListView;
     ImageList: TImageList;
+    {$IFDEF lcl} grid: TTIPropertyGrid; {$ENDIF}
     constructor create(TheOwner: TComponent); override;
   end;
 
@@ -76,6 +77,9 @@ end;
 procedure TExampleForm.ExampleFormShow(Sender: TObject);
 begin
   TreeListView1.createSearchBar();
+  {$ifdef lcl}
+  grid.TIObject:=TreeListView1;
+  {$endif}
 end;
 
 procedure TExampleForm.TLClickRecordItem(sender: TObject; item: TTreeListRecordItem);
@@ -106,7 +110,6 @@ var i:longint;
     bmp:TBitmap;
     pmenu: TPopupMenu;
     mi: TMenuItem;
-    {$IFDEF lcl} grid: TTIPropertyGrid; {$ENDIF}
 begin
   inherited {$ifndef fpc}createnew(theOwner){$endif};
   width:=800;
@@ -237,13 +240,12 @@ begin
      align:=alLeft;
    end;
 
+
    grid:=TTIPropertyGrid.Create(self);
    grid.Align:=alLeft;
-   grid.TIObject:=TreeListView1;
    grid.Parent:=self;
-
    {$ENDIF}
 end;
 
 end.
-
+
