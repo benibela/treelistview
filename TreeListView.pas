@@ -10,6 +10,7 @@
 unit TreeListView;
 {$ifdef fpc}
   {$mode delphi}
+  {$COperators on}
 {$endif}
 {$ifdef clr}
   {$UNSAFECODE ON}
