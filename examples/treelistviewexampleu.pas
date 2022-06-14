@@ -112,8 +112,8 @@ var i:longint;
     mi: TMenuItem;
 begin
   inherited {$ifndef fpc}createnew(theOwner){$endif};
-  width:=800;
-  height:=400;
+  width:=900;
+  height:=600;
   left:=(screen.width-width) div 2;
   top:=(screen.Height-height) div 2;
 

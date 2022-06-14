@@ -92,6 +92,7 @@ protected
   captionLbl,statusLabel: TLabel;
   locationsCmb: TComboBox;
   searchEdt: TEdit;
+  visibleSubControls: array of tcontrol;
   procedure updateComponents;
   procedure moveComponents;
   {$ifdef lcl}
@@ -133,9 +134,9 @@ end;
 procedure Register;
 
 implementation
-{$ifdef lcl}
-uses LResources; //for icon
-{$endif}
+uses math
+     {$ifdef lcl},LResources{$endif} //for icon
+     ;
 
 { TSearchBar }
 
@@ -244,10 +245,11 @@ begin
     if searchEdt.Text='' then searchEdt.Color:=clWindow
     else if fsFound in AValue then searchEdt.Color:=FFoundColor
     else searchEdt.Color:=FNotFoundColor;
-  if assigned(statusLabel) then
+  if assigned(statusLabel) then begin
     if not (fsFound in AValue) then statusLabel.Caption:=FNotFoundState
     else if (fsLoopAround in AValue) then statusLabel.Caption:=FLoopAroundState
     else statusLabel.Caption:='';
+  end;
 end;
 
 procedure TSearchBar.SetHighlightText(const AValue: string);
@@ -290,9 +292,8 @@ end;
 {$endif}
 
 procedure TSearchBar.updateComponents;
-const HSPACING:longint = 3;
-var cx:longint;
-    tempBitmap: graphics.TBitmap;
+var tempBitmap: graphics.TBitmap;
+    controlIndex: integer = 0;
   //returns if the control is new created
   function setControl(show: boolean; var control: TControl; controlClass: TControlClass; cap:string; wid: longint=-1): boolean;
   begin
@@ -307,9 +308,9 @@ var cx:longint;
       {$ifndef lcl}TControlCracker{$endif}(control).Caption:=cap;
       if tempBitmap.Canvas.TextWidth(cap) > wid-5 then
          wid:=tempBitmap.Canvas.TextWidth(cap)+5;
-      control.Left:=cx;
-      if wid<>-1 then control.Width:=wid;
-      cx:=cx+control.Width+HSPACING;
+      if wid<>-1 then control.Width:=max(control.Height, wid);
+      visibleSubControls[controlIndex] := control;
+      inc(controlIndex);
     end else if control<>nil then begin
       control.free;
       control:=nil;
@@ -321,8 +322,8 @@ begin
   tempBitmap.Height:=8;
   tempBitmap.Canvas.Font:=font;
   tempBitmap.Canvas.TextOut(0,0,'load font'); //yes this is really needed, otherwise the lcl chrashes
+  SetLength(visibleSubControls, ord(high(TSearchBarSubControls)) - ord(low(TSearchBarSubControls)) + 1 + 1);
   try
-    cx:=HSPACING;
     if setControl(fscCloseButton in SubComponents,tcontrol(closeBtn),TSpeedButton, 'X',20) then
       closeBtn.OnClick:=closeBtnClick;
     SetControl(fscCaption in SubComponents,tcontrol(captionLbl),TLabel, Caption);
@@ -344,6 +345,8 @@ begin
     end;
 
     setControl(fscStatus in SubComponents,tcontrol(statusLabel),TLabel,'');
+    writeln(length(visibleSubControls), ' ',controlIndex);
+    SetLength(visibleSubControls, controlIndex);
     moveComponents;
   finally
     tempBitmap.free;
@@ -352,6 +355,10 @@ end;
 
 procedure TSearchBar.moveComponents;
 var i,maxHeight:longint;
+  totalWidth, editWidth: Integer;
+const HSPACING:longint = 3;
+      minEditWidth = 150;
+      maxEditWidth = 450;
 begin
   maxHeight:=0;
   for i:=0 to ControlCount -1 do
@@ -362,12 +369,32 @@ begin
        Controls[i].Height:=maxHeight;
     Controls[i].Top:=(Height-Controls[i].Height) div 2;
   end;
+
+  totalWidth := 0;
+  for i := 0 to high(visibleSubControls) do begin
+    if visibleSubControls[i] <> searchEdt then
+      totalWidth := totalWidth + visibleSubControls[i].Width + HSPACING;
+  end;
+
+  if assigned(searchEdt) then begin
+    editWidth := ClientWidth - totalWidth;
+    if editWidth < minEditWidth then editWidth := minEditWidth
+    else if editWidth > maxEditWidth then editWidth := maxEditWidth;
+    searchEdt.Width := editWidth;
+  end;
+
+  totalWidth := HSPACING;
+  for i := 0 to high(visibleSubControls) do begin
+    visibleSubControls[i].Left := totalWidth;
+    totalWidth := totalWidth + visibleSubControls[i].Width + HSPACING;
+  end;
 end;
 
 {$ifdef lcl}
 procedure TSearchBar.DoOnResize;
 begin
-  if height<>FOldHeight then moveComponents;
+  //if height<>FOldHeight then
+    moveComponents;
   FOldHeight:=Height;
   inherited DoOnResize;
 end;
