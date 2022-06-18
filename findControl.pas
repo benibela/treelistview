@@ -345,7 +345,6 @@ begin
     end;
 
     setControl(fscStatus in SubComponents,tcontrol(statusLabel),TLabel,'');
-    writeln(length(visibleSubControls), ' ',controlIndex);
     SetLength(visibleSubControls, controlIndex);
     moveComponents;
   finally
