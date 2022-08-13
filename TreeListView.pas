@@ -2295,7 +2295,7 @@ begin
 
   if tlvoSorted in toAdd then sort;
 
-  if needRepaint then internRepaint;
+  if needRepaint then sheduleInternRepaint();
 end;
 
 procedure TTreeListView.SetOption(const Option: TTreeListViewOption;
