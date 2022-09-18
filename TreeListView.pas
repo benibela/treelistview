@@ -36,6 +36,8 @@ uses
   {$ifdef clr},types{$endif}
   {$ifdef lcl},LCLType,LCLIntf, LMessages{$else},windows,messages{$endif};
 
+const PACKAGE_VERSION = '1.0.0.repo';
+
 type
   {$TYPEINFO ON}
   //Forward
